@@ -17,6 +17,13 @@ export const COLORS = {
   grid: 0x10202e,
 } as const;
 
+/** Keycards: red opens the first locked room, blue the second, gold (Core Override) runs the elevator. */
+export const KEY_INFO = {
+  red: { name: 'RED ACCESS CARD', color: 0xff0055 },
+  blue: { name: 'BLUE BYPASS CARD', color: 0x3d7bff },
+  gold: { name: 'GOLD CORE KEY', color: 0xffd400 },
+} as const;
+
 /** Shots despawn after travelling this far. */
 export const BULLET_RANGE = 900;
 /** Muzzle distance from the shooter's center, px. */

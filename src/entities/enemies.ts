@@ -29,18 +29,20 @@ export function createEnemy(
   roomId: string,
   waypoints: Point[],
   weapon: WeaponId,
+  floor = 1,
 ): Entity {
   const enemy = world.create();
   // Softer damage and fire rate come from the same passives mechanism the player's implants use.
+  // Deeper floors harden both, and give bots more HP.
   const passives = createPassiveSynergy();
-  passives.stats.damageMult = ENEMY.damageMult;
+  passives.stats.damageMult = Math.min(0.9, ENEMY.damageMult + 0.04 * (floor - 1));
   passives.stats.fireRateMult = ENEMY.fireRateMult;
 
   world
     .add(enemy, 'transform', createTransform(x, y, Math.random() * Math.PI * 2))
     .add(enemy, 'intent', createIntent())
     .add(enemy, 'locomotion', { ...createLocomotion(), runSpeed: ENEMY.runSpeed, turnRate: ENEMY.turnRate })
-    .add(enemy, 'health', createHealth(ENEMY.hp, 0))
+    .add(enemy, 'health', createHealth(Math.round(ENEMY.hp * (1 + 0.1 * (floor - 1))), 0))
     .add(enemy, 'noiseEmitter', createNoiseEmitter())
     .add(enemy, 'passiveSynergy', passives)
     .add(enemy, 'weaponInventory', createWeaponInventory([weapon]))
@@ -53,19 +55,23 @@ export function createEnemy(
   return enemy;
 }
 
-/** 1-3 bots in every room but the spawn room (3 guard the exit). Deterministic per dungeon seed. */
+/**
+ * 1-3 bots in every combat room (one more from floor 3) and 3 guarding the exit. The spawn,
+ * shop, chest and secret rooms stay empty. Deterministic per dungeon seed.
+ */
 export function populateEnemies(world: World, renderer: RenderSystem, dungeon: Dungeon): number {
   const rng = createRng(dungeon.seed ^ 0x9e3779b9);
+  const extra = dungeon.floor >= 3 ? 1 : 0;
   let count = 0;
   for (const room of dungeon.rooms) {
-    if (room.type === 'SPAWN') continue;
-    const n = room.type === 'EXIT' ? 3 : rng.int(1, 3);
+    if (room.type !== 'COMBAT' && room.type !== 'EXIT') continue;
+    const n = room.type === 'EXIT' ? 3 + extra : rng.int(1, 3) + extra;
     for (let i = 0; i < n; i++) {
       const spot = randomFloor(dungeon.map, room, rng, dungeon.spawn);
       const waypoints = [spot, randomFloor(dungeon.map, room, rng), randomFloor(dungeon.map, room, rng)];
       const roll = rng.next();
       const weapon: WeaponId = roll < 0.65 ? 'PLASMA_PISTOL' : roll < 0.9 ? 'AUTO_SMG' : 'NEON_SHOTGUN';
-      createEnemy(world, renderer, spot.x, spot.y, room.id, waypoints, weapon);
+      createEnemy(world, renderer, spot.x, spot.y, room.id, waypoints, weapon, dungeon.floor);
       count++;
     }
   }

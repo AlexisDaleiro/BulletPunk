@@ -108,6 +108,8 @@ export interface ProjectileComponent {
   team: Team;
   damage: number;
   piercing: boolean;
+  /** Explosive rounds crack secret walls. */
+  explosive: boolean;
   bounces: number;
   /** Seconds left before it despawns. */
   life: number;
@@ -115,13 +117,25 @@ export interface ProjectileComponent {
   hit: number[];
 }
 
-/** Walk-over loot: a weapon (or ammo for the active weapon). */
+/** Walk-over loot. */
 export interface PickupComponent {
-  kind: 'WEAPON' | 'AMMO';
-  /** Weapon id for kind WEAPON. */
-  weaponId: string | null;
-  /** Spare magazines of the receiving weapon this grants. */
-  ammo: number;
+  kind: 'WEAPON' | 'AMMO' | 'KEY' | 'CREDITS' | 'IMPLANT';
+  /** WEAPON: weapon id. KEY: key color. IMPLANT: implant id. Unused otherwise. */
+  id: string | null;
+  /** WEAPON / AMMO: spare magazines granted. CREDITS: credits granted. */
+  amount: number;
+}
+
+/** Press-to-use props: chests, shop pedestals, medical stations, the access breaker. */
+export interface InteractableComponent {
+  kind: 'CHEST' | 'SHOP_ITEM' | 'MEDIC' | 'BREAKER';
+  /** CHEST: tier 1-3. SHOP_ITEM: "WEAPON:<id>", "IMPLANT:<id>" or "AMMO". */
+  payload: string;
+  /** Credits. */
+  cost: number;
+  /** Shown in the prompt. */
+  label: string;
+  used: boolean;
 }
 
 export interface RenderableComponent {
@@ -197,6 +211,7 @@ export interface ComponentMap {
   team: TeamComponent;
   projectile: ProjectileComponent;
   pickup: PickupComponent;
+  interactable: InteractableComponent;
 }
 
 export function createTransform(x: number, y: number, angle = 0): TransformComponent {
@@ -271,19 +286,20 @@ export function createNoiseEmitter(): NoiseEmitterComponent {
   return { movementAccumulator: 0, weaponNoiseRadius: NOISE_PROFILES.SHOOT.maxRadius };
 }
 
-/** Neutral passives: multipliers 1, additives 0. */
-export function createPassiveSynergy(): PassiveSynergyComponent {
+/** Multipliers 1, additives 0. */
+export function neutralStats(): PassiveSynergyComponent['stats'] {
   return {
-    passives: [],
-    stats: {
-      moveSpeedMult: 1,
-      visionRangeMult: 1,
-      visionAngleBonus: 0,
-      noiseDampingMult: 1,
-      damageMult: 1,
-      fireRateMult: 1,
-      bulletBounces: 0,
-      shieldRegenRate: 0,
-    },
+    moveSpeedMult: 1,
+    visionRangeMult: 1,
+    visionAngleBonus: 0,
+    noiseDampingMult: 1,
+    damageMult: 1,
+    fireRateMult: 1,
+    bulletBounces: 0,
+    shieldRegenRate: 0,
   };
+}
+
+export function createPassiveSynergy(): PassiveSynergyComponent {
+  return { passives: [], stats: neutralStats() };
 }

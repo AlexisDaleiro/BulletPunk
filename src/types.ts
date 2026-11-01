@@ -1,3 +1,5 @@
+export type KeyColor = 'red' | 'blue' | 'gold';
+
 export type TileType =
   | 'VOID'
   | 'FLOOR'

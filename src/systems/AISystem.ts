@@ -1,3 +1,4 @@
+import type { SoundManager } from '../audio/SoundManager';
 import { ENEMY, TILE_SIZE } from '../config';
 import type {
   AIControllerComponent,
@@ -38,11 +39,13 @@ export class AISystem implements System {
   map: TileMap | null = null;
   private readonly renderer: RenderSystem;
   private readonly field: NoiseField;
+  private readonly audio: SoundManager;
   private time = 0;
 
-  constructor(renderer: RenderSystem, field: NoiseField) {
+  constructor(renderer: RenderSystem, field: NoiseField, audio: SoundManager) {
     this.renderer = renderer;
     this.field = field;
+    this.audio = audio;
   }
 
   update(world: World, dt: number): void {
@@ -178,6 +181,7 @@ export class AISystem implements System {
     ai.coverTimer = 0;
     ai.reactionTimer = ENEMY.reaction[0] + Math.random() * (ENEMY.reaction[1] - ENEMY.reaction[0]);
     spawnAlertMark(world, this.renderer, t.x, t.y - 26);
+    this.audio.playAlert(t);
   }
 
   private enterInvestigate(map: TileMap, ai: AIControllerComponent, t: TransformComponent): void {

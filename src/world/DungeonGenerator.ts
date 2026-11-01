@@ -1,15 +1,33 @@
-import type { Room } from '../types';
+import type { KeyColor, Room } from '../types';
 // `.ts` extensions: Node's test runner needs them for runtime imports (type imports are erased).
 import { DUNGEON, TILE_SIZE } from '../config.ts';
 import { createRng, type Rng } from '../core/rng.ts';
+import { planLocks, roomCenter, shuffled, type Door } from './locks.ts';
+import { carveSecretRoom } from './secretRoom.ts';
 import { TileMap } from './TileMap.ts';
 
 export interface Dungeon {
   seed: number;
+  floor: number;
   map: TileMap;
   rooms: Room[];
   /** Spawn point in world px: the center of the SPAWN room. */
   spawn: { x: number; y: number };
+  /** Colored doors sealing CHEST rooms (0-2). */
+  doors: Door[];
+  /** Room holding each key. Always includes gold, the Core Override Key. */
+  keyRooms: Partial<Record<KeyColor, string>>;
+  /** Tile of the exit elevator, in the EXIT room. */
+  elevator: { x: number; y: number };
+  /** Room holding the Access Breaker node; set only when the floor has a secret room. */
+  breakerRoomId: string | null;
+}
+
+export interface GenerateOptions {
+  /** 1-based. Shops appear on even floors. */
+  floor?: number;
+  width?: number;
+  height?: number;
 }
 
 interface Rect {
@@ -22,10 +40,12 @@ interface Rect {
 type Edge = readonly [number, number];
 
 /**
- * BSP rooms joined by a minimum spanning tree plus a few loop corridors.
- * Deterministic per seed. Every room is reachable from every other.
+ * BSP rooms joined by a minimum spanning tree plus a few loop corridors, then dressed with the
+ * progression layer: colored doors and keys (solvable by construction), a shop on even floors,
+ * a hidden secret room and the exit elevator. Deterministic per seed and floor.
  */
-export function generateDungeon(seed: number, width: number = DUNGEON.width, height: number = DUNGEON.height): Dungeon {
+export function generateDungeon(seed: number, options: GenerateOptions = {}): Dungeon {
+  const { floor = 1, width = DUNGEON.width, height = DUNGEON.height } = options;
   const rng = createRng(seed);
   const map = new TileMap(width, height);
 
@@ -35,17 +55,42 @@ export function generateDungeon(seed: number, width: number = DUNGEON.width, hei
   for (const room of rooms) fill(map, room.x, room.y, room.width, room.height, 'FLOOR');
 
   for (const [a, b] of connect(rooms, rng)) {
-    carveCorridor(map, center(rooms[a]), center(rooms[b]), rng);
+    carveCorridor(map, roomCenter(rooms[a]), roomCenter(rooms[b]), rng);
     rooms[a].connectedRoomIds.push(rooms[b].id);
     rooms[b].connectedRoomIds.push(rooms[a].id);
   }
 
   wallOffFloors(map);
   const spawnRoom = classify(rooms, rng);
+  const exitRoom = rooms.find((r) => r.type === 'EXIT') as Room;
+
+  const { doors, keyRooms, openRoomIds } = planLocks(map, rooms, spawnRoom, rng);
+  if (floor % 2 === 0) assignShop(rooms, spawnRoom, openRoomIds, new Set(Object.values(keyRooms)));
+
+  const elevator = roomCenter(exitRoom);
+  map.set(elevator.x, elevator.y, 'EXIT_ELEVATOR');
+
+  const secret = carveSecretRoom(map, rooms, rng);
+  let breakerRoomId: string | null = null;
+  if (secret) {
+    const hosts = rooms.filter((r) => r.type === 'COMBAT' && openRoomIds.has(r.id));
+    if (hosts.length > 0) breakerRoomId = shuffled(hosts, rng)[0].id;
+  }
+
   for (const room of rooms) if (room.type === 'COMBAT') placeCover(map, room, rng);
 
-  const c = center(spawnRoom);
-  return { seed, map, rooms, spawn: { x: (c.x + 0.5) * TILE_SIZE, y: (c.y + 0.5) * TILE_SIZE } };
+  const c = roomCenter(spawnRoom);
+  return {
+    seed,
+    floor,
+    map,
+    rooms,
+    spawn: { x: (c.x + 0.5) * TILE_SIZE, y: (c.y + 0.5) * TILE_SIZE },
+    doors,
+    keyRooms,
+    elevator,
+    breakerRoomId,
+  };
 }
 
 /** Recursively splits `leaf` into rectangles whose edges are >= minLeaf. */
@@ -90,16 +135,12 @@ function placeRoom(leaf: Rect, index: number, rng: Rng): Room {
   };
 }
 
-function center(room: Room): { x: number; y: number } {
-  return { x: room.x + Math.floor(room.width / 2), y: room.y + Math.floor(room.height / 2) };
-}
-
 /** Prim's MST over room centers, then `loopFraction` extra short edges so the floor is not a tree. */
 function connect(rooms: Room[], rng: Rng): Edge[] {
   const n = rooms.length;
   const dist = (a: number, b: number): number => {
-    const ca = center(rooms[a]);
-    const cb = center(rooms[b]);
+    const ca = roomCenter(rooms[a]);
+    const cb = roomCenter(rooms[b]);
     return Math.hypot(ca.x - cb.x, ca.y - cb.y);
   };
 
@@ -194,12 +235,24 @@ function classify(rooms: Room[], rng: Rng): Room {
   return spawn;
 }
 
+/** The open combat room nearest the spawn (and holding no key) becomes the safe-zone shop. */
+function assignShop(rooms: Room[], spawnRoom: Room, open: ReadonlySet<string>, keyRoomIds: ReadonlySet<string | undefined>): void {
+  const from = roomCenter(spawnRoom);
+  const dist = (r: Room): number => {
+    const c = roomCenter(r);
+    return Math.hypot(c.x - from.x, c.y - from.y);
+  };
+  const candidates = rooms.filter((r) => r.type === 'COMBAT' && open.has(r.id) && !keyRoomIds.has(r.id));
+  candidates.sort((a, b) => dist(a) - dist(b));
+  if (candidates.length > 0) candidates[0].type = 'SHOP';
+}
+
 /**
  * 2-4 single-tile barricades, kept 2 tiles off the walls, off the room center and never
  * touching each other: a room stays one open space, so cover can not block a route.
  */
 function placeCover(map: TileMap, room: Room, rng: Rng): void {
-  const c = center(room);
+  const c = roomCenter(room);
   const count = rng.int(2, 4);
   for (let placed = 0, tries = 0; placed < count && tries < 20; tries++) {
     const tx = rng.int(room.x + 2, room.x + room.width - 3);

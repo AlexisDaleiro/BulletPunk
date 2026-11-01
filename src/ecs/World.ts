@@ -70,6 +70,11 @@ export class World {
     return this.alive.size;
   }
 
+  /** Snapshot of every live entity id. */
+  entities(): Entity[] {
+    return [...this.alive];
+  }
+
   create(): Entity {
     const entity = this.free.pop() ?? this.nextId++;
     this.alive.add(entity);
@@ -143,7 +148,7 @@ export class World {
         }
         comps[j] = c;
       }
-      if (match) fn(entity, ...(comps as Components<K>));
+      if (match) fn(entity, ...(comps as unknown as Components<K>));
     }
   }
 }

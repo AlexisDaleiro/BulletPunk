@@ -31,6 +31,7 @@ test('200 seeds: sane rooms, one connected floor, spawn/exit assigned, border se
     assert.equal(d.rooms.filter((r) => r.type === 'EXIT').length, 1);
 
     for (const r of d.rooms) {
+      if (r.type === 'SECRET') continue; // small by design
       assert.ok(r.width >= 6 && r.width <= 14 && r.height >= 6 && r.height <= 14, `seed ${seed}: room size`);
     }
 
@@ -39,6 +40,7 @@ test('200 seeds: sane rooms, one connected floor, spawn/exit assigned, border se
     assert.ok(!d.map.isSolid(sx, sy), `seed ${seed}: spawn in a wall`);
     const reach = reachable(d.map, sx, sy);
     for (const r of d.rooms) {
+      if (r.type === 'CHEST' || r.type === 'SECRET') continue; // behind a locked door / a cracked wall
       const cx = r.x + Math.floor(r.width / 2);
       const cy = r.y + Math.floor(r.height / 2);
       assert.ok(reach.has(cy * d.map.width + cx), `seed ${seed}: ${r.id} unreachable`);

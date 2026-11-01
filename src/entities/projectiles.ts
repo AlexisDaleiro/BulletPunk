@@ -13,6 +13,7 @@ export interface ShotSpec {
   team: Team;
   damage: number;
   piercing: boolean;
+  explosive: boolean;
   bounces: number;
 }
 
@@ -45,6 +46,7 @@ export class ProjectilePool {
     p.team = spec.team;
     p.damage = spec.damage;
     p.piercing = spec.piercing;
+    p.explosive = spec.explosive;
     p.bounces = spec.bounces;
     p.life = BULLET_RANGE / spec.speed;
     p.hit.length = 0;
@@ -57,6 +59,11 @@ export class ProjectilePool {
     node.clear().moveTo(-length, 0).lineTo(0, 0).stroke({ width, color, alpha: 0.85 }).circle(0, 0, width).fill(0xffffff);
     node.renderable = true;
     return entity;
+  }
+
+  /** Forgets every recycled bolt. Call after the world was cleared, when their entities no longer exist. */
+  reset(): void {
+    this.idle.length = 0;
   }
 
   release(entity: Entity): void {
@@ -75,7 +82,7 @@ export class ProjectilePool {
     const entity = this.world.create();
     this.world
       .add(entity, 'transform', createTransform(0, 0))
-      .add(entity, 'projectile', { active: false, team: 'PLAYER', damage: 0, piercing: false, bounces: 0, life: 0, hit: [] })
+      .add(entity, 'projectile', { active: false, team: 'PLAYER', damage: 0, piercing: false, explosive: false, bounces: 0, life: 0, hit: [] })
       .add(entity, 'fogged', {});
     const node = new Graphics();
     node.blendMode = 'add';

@@ -1,3 +1,4 @@
+import type { SoundManager } from '../audio/SoundManager';
 import { WEAPONS, type WeaponId } from '../combat/weapons';
 import { COLORS } from '../config';
 import type { System } from '../ecs/System';
@@ -8,15 +9,17 @@ import type { RenderSystem } from './RenderSystem';
 
 /** Weighted by repetition: what a bot may drop besides the pistol. */
 const LOOT_WEAPONS: readonly WeaponId[] = ['AUTO_SMG', 'AUTO_SMG', 'AUTO_SMG', 'NEON_SHOTGUN', 'NEON_SHOTGUN', 'HEAVY_RAILGUN'];
-const WEAPON_DROP_CHANCE = 0.3;
+const WEAPON_DROP_CHANCE = 0.2;
 const AMMO_DROP_CHANCE = 0.2;
 
 /** Ticks i-frames and shield regen, and handles deaths: bots drop loot and vanish, the player goes down. */
 export class HealthSystem implements System {
   private readonly renderer: RenderSystem;
+  private readonly audio: SoundManager;
 
-  constructor(renderer: RenderSystem) {
+  constructor(renderer: RenderSystem, audio: SoundManager) {
     this.renderer = renderer;
+    this.audio = audio;
   }
 
   update(world: World, dt: number): void {
@@ -47,24 +50,28 @@ export class HealthSystem implements System {
     if (r) r.node.alpha = 0.35;
     const t = world.get(entity, 'transform');
     if (t) spawnFlash(world, this.renderer, t.x, t.y, COLORS.cyan, 26, 0.5);
+    this.audio.playDeath();
   }
 
   private killEnemy(world: World, entity: Entity): void {
     const t = world.get(entity, 'transform');
     if (t) {
       spawnFlash(world, this.renderer, t.x, t.y, COLORS.red, 22, 0.35);
+      this.audio.playBulletImpact(t);
       this.dropLoot(world, t.x, t.y);
     }
     world.destroy(entity);
   }
 
+  /** Every bot drops a few credits; sometimes a weapon or a magazine as well. */
   private dropLoot(world: World, x: number, y: number): void {
+    createPickup(world, this.renderer, x, y, { kind: 'CREDITS', id: null, amount: 4 + Math.floor(Math.random() * 7) });
     const roll = Math.random();
     if (roll < WEAPON_DROP_CHANCE) {
       const id = LOOT_WEAPONS[Math.floor(Math.random() * LOOT_WEAPONS.length)];
-      createPickup(world, this.renderer, x, y, { kind: 'WEAPON', weaponId: WEAPONS[id].id, ammo: 2 });
+      createPickup(world, this.renderer, x + 22, y, { kind: 'WEAPON', id: WEAPONS[id].id, amount: 2 });
     } else if (roll < WEAPON_DROP_CHANCE + AMMO_DROP_CHANCE) {
-      createPickup(world, this.renderer, x, y, { kind: 'AMMO', weaponId: null, ammo: 1 });
+      createPickup(world, this.renderer, x + 22, y, { kind: 'AMMO', id: null, amount: 1 });
     }
   }
 }

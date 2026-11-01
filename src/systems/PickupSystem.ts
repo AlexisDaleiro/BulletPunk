@@ -1,43 +1,60 @@
-import { isWeaponId, WEAPONS } from '../combat/weapons';
-import type { PickupComponent, WeaponInventoryComponent } from '../ecs/components';
+import type { SoundManager } from '../audio/SoundManager';
+import { addAmmo, giveWeapon } from '../combat/loadout';
+import { isWeaponId } from '../combat/weapons';
+import type { PassiveSynergyComponent, PickupComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
+import type { GameState } from '../game/GameState';
+import { addImplant, IMPLANTS, isImplantId } from '../shop/implants';
+import type { KeyColor } from '../types';
 
 const PICKUP_RADIUS = 24;
+const KEY_COLORS: readonly string[] = ['red', 'blue', 'gold'];
 
-/** Walking over loot collects it. Weapon pickups equip the weapon; ammo tops up the first finite-ammo gun. */
+/** Walking over loot collects it: weapons, ammo, keycards, credits and free implants. */
 export class PickupSystem implements System {
+  private readonly state: GameState;
+  private readonly audio: SoundManager;
+
+  constructor(state: GameState, audio: SoundManager) {
+    this.state = state;
+    this.audio = audio;
+  }
+
   update(world: World): void {
-    world.each(['playerControlled', 'transform', 'weaponInventory'], (_entity, _tag, t, inv) => {
+    world.each(['playerControlled', 'transform', 'weaponInventory', 'passiveSynergy'], (_entity, _tag, t, inv, syn) => {
       world.each(['pickup', 'transform'], (loot, pickup, pt) => {
         if (Math.hypot(pt.x - t.x, pt.y - t.y) > PICKUP_RADIUS) return;
-        if (collect(pickup, inv)) world.destroy(loot);
+        if (!this.collect(pickup, inv, syn)) return;
+        world.destroy(loot);
+        this.audio.playPickup();
       });
     });
   }
-}
 
-/** Applies a pickup to an inventory. Returns false when it can not be used, so it stays on the floor. */
-function collect(pickup: PickupComponent, inv: WeaponInventoryComponent): boolean {
-  // `ammo` counts magazines of the receiving weapon.
-  if (pickup.kind === 'AMMO') {
-    const slot = Number.isFinite(inv.reserve[inv.activeSlot]) ? inv.activeSlot : inv.reserve.findIndex(Number.isFinite);
-    if (slot < 0) return false; // only the pistol: nothing to refill
-    inv.reserve[slot] += pickup.ammo * inv.slots[slot].magazineSize;
-    return true;
+  /** Applies a pickup. Returns false when it can not be used, so it stays on the floor. */
+  private collect(pickup: PickupComponent, inv: WeaponInventoryComponent, syn: PassiveSynergyComponent): boolean {
+    switch (pickup.kind) {
+      case 'AMMO':
+        return addAmmo(inv, pickup.amount);
+      case 'CREDITS':
+        this.state.credits += pickup.amount;
+        return true;
+      case 'KEY':
+        if (pickup.id && KEY_COLORS.includes(pickup.id)) {
+          this.state.keys[pickup.id as KeyColor] = true;
+          this.state.toast(`${pickup.id.toUpperCase()} KEYCARD ACQUIRED`);
+        }
+        return true;
+      case 'IMPLANT':
+        if (pickup.id && isImplantId(pickup.id)) {
+          addImplant(syn, IMPLANTS[pickup.id]);
+          this.state.toast(`${IMPLANTS[pickup.id].name} INSTALLED`);
+        }
+        return true;
+      case 'WEAPON':
+        if (pickup.id && isWeaponId(pickup.id)) giveWeapon(inv, pickup.id, pickup.amount);
+        return true;
+    }
   }
-
-  if (!pickup.weaponId || !isWeaponId(pickup.weaponId)) return true;
-  const def = WEAPONS[pickup.weaponId];
-  const owned = inv.slots.findIndex((s) => s.id === def.id);
-  if (owned >= 0) {
-    inv.reserve[owned] += pickup.ammo * def.magazineSize;
-    return true;
-  }
-  inv.slots.push(def);
-  inv.magazine.push(def.magazineSize);
-  inv.reserve.push(pickup.ammo * def.magazineSize);
-  inv.activeSlot = inv.slots.length - 1;
-  inv.reloadTimer = 0;
-  return true;
 }

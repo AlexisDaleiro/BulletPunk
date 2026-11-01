@@ -27,6 +27,8 @@ export class FogSystem implements System {
   private explored = new Uint8Array(0);
   /** The player's polygon from the latest step; null when there is no player. */
   private polygon: number[] | null = null;
+  /** Bumped whenever a tile becomes explored; the minimap redraws when it moves. */
+  version = 0;
 
   constructor(renderer: RenderSystem) {
     this.renderer = renderer;
@@ -39,9 +41,16 @@ export class FogSystem implements System {
     this.renderer.layers.vision.addChild(this.fog, this.mask, this.beam);
   }
 
+  /** Has the player seen this tile? */
+  isExplored(tx: number, ty: number): boolean {
+    const map = this.map;
+    return map !== null && map.inBounds(tx, ty) && this.explored[ty * map.width + tx] === 1;
+  }
+
   /** Starts a fresh fog for `map`: every tile unexplored. */
   setMap(map: TileMap): void {
     this.map = map;
+    this.version++;
     for (const c of this.shroud.removeChildren()) c.destroy();
     this.cover = new Array<Sprite | undefined>(map.width * map.height);
     this.explored = new Uint8Array(map.width * map.height);
@@ -104,6 +113,7 @@ export class FogSystem implements System {
   private explore(map: TileMap, tx: number, ty: number): void {
     if (!map.inBounds(tx, ty)) return;
     const i = ty * map.width + tx;
+    if (!this.explored[i]) this.version++;
     this.explored[i] = 1;
     const sprite = this.cover[i];
     if (sprite) sprite.visible = false;

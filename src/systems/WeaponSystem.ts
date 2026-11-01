@@ -1,3 +1,4 @@
+import type { SoundManager } from '../audio/SoundManager';
 import { COLORS, MUZZLE_OFFSET, NOISE_PROFILE_MULT } from '../config';
 import type { Team, TransformComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
@@ -20,11 +21,13 @@ export class WeaponSystem implements System {
   private readonly renderer: RenderSystem;
   private readonly field: NoiseField;
   private readonly pool: ProjectilePool;
+  private readonly audio: SoundManager;
 
-  constructor(renderer: RenderSystem, field: NoiseField, pool: ProjectilePool) {
+  constructor(renderer: RenderSystem, field: NoiseField, pool: ProjectilePool, audio: SoundManager) {
     this.renderer = renderer;
     this.field = field;
     this.pool = pool;
+    this.audio = audio;
   }
 
   update(world: World, dt: number): void {
@@ -70,6 +73,7 @@ export class WeaponSystem implements System {
     inv.reloadTimer = w.reloadTime;
     const damping = world.get(entity, 'passiveSynergy')?.stats.noiseDampingMult ?? 1;
     this.field.emit('UTILITY', t.x, t.y, entity, damping);
+    this.audio.playReload(t);
   }
 
   private fire(world: World, entity: Entity, t: TransformComponent, w: WeaponDefinition, inv: WeaponInventoryComponent, team: Team): void {
@@ -83,6 +87,7 @@ export class WeaponSystem implements System {
 
     const mult = NOISE_PROFILE_MULT[w.noiseProfile];
     if (mult > 0) this.field.emit('SHOOT', t.x, t.y, entity, mult * (stats?.noiseDampingMult ?? 1));
+    this.audio.playLaserShoot(w.type, t);
 
     // Muzzle inside a wall (shooter hugging it): the shot dies on the wall face.
     const map = this.map;
@@ -104,6 +109,7 @@ export class WeaponSystem implements System {
         team,
         damage,
         piercing: w.specialAttributes?.piercing ?? false,
+        explosive: w.noiseProfile === 'EXPLOSIVE',
         bounces,
       });
     }

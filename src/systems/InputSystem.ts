@@ -1,3 +1,4 @@
+import type { GameState } from '../game/GameState';
 import type { InputManager } from '../input/InputManager';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
@@ -7,14 +8,17 @@ import type { RenderSystem } from './RenderSystem';
 export class InputSystem implements System {
   private readonly input: InputManager;
   private readonly renderer: RenderSystem;
+  private readonly state: GameState;
 
-  constructor(input: InputManager, renderer: RenderSystem) {
+  constructor(input: InputManager, renderer: RenderSystem, state: GameState) {
     this.input = input;
     this.renderer = renderer;
+    this.state = state;
   }
 
   update(world: World): void {
     const s = this.input.poll();
+    this.state.touch = s.mode === 'touch';
     world.each(['playerControlled', 'intent', 'transform'], (_entity, _tag, intent, t) => {
       intent.moveX = s.moveX;
       intent.moveY = s.moveY;
