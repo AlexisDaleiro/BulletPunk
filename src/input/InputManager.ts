@@ -22,6 +22,7 @@ export interface InputState {
   dash: boolean;
   reload: boolean;
   interact: boolean;
+  swap: boolean;
 }
 
 const DASH_KEYS = ['Space', 'ShiftLeft', 'ShiftRight'];
@@ -32,14 +33,14 @@ const BLOCKED_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
  * switches to the overlay, a key press or mouse event switches back.
  *
  * Desktop: WASD/arrows move, mouse aims, left click fires, R reload, Space/Shift dash,
- * E interact, hold C to sneak (silent).
+ * E interact, Q swap weapon, hold C to sneak (silent).
  */
 export class InputManager {
   private mode: InputMode;
   private readonly host: HTMLElement;
   private readonly touch: TouchControls;
   private readonly keys = new Set<string>();
-  private readonly edges: ActionEdges = { dash: false, reload: false, interact: false };
+  private readonly edges: ActionEdges = { dash: false, reload: false, interact: false, swap: false };
   private mouseDown = false;
   private pointerX = 0;
   private pointerY = 0;
@@ -58,6 +59,7 @@ export class InputManager {
     dash: false,
     reload: false,
     interact: false,
+    swap: false,
   };
 
   constructor(host: HTMLElement) {
@@ -84,7 +86,8 @@ export class InputManager {
     s.dash = this.edges.dash;
     s.reload = this.edges.reload;
     s.interact = this.edges.interact;
-    this.edges.dash = this.edges.reload = this.edges.interact = false;
+    s.swap = this.edges.swap;
+    this.edges.dash = this.edges.reload = this.edges.interact = this.edges.swap = false;
     return s;
   }
 
@@ -151,6 +154,7 @@ export class InputManager {
     if (DASH_KEYS.includes(e.code)) this.edges.dash = true;
     else if (e.code === 'KeyR') this.edges.reload = true;
     else if (e.code === 'KeyE') this.edges.interact = true;
+    else if (e.code === 'KeyQ') this.edges.swap = true;
   };
 
   private readonly onKeyUp = (e: KeyboardEvent): void => {

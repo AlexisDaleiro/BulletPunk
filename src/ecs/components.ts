@@ -68,11 +68,60 @@ export type AIState =
 
 export interface AIControllerComponent {
   state: AIState;
+  /** Where the bot is heading: noise origin or last known player position. */
   targetX: number;
   targetY: number;
   /** Seconds left before an ALERT_ACQUIRE enemy opens fire. */
   reactionTimer: number;
   lastHeardSound: { x: number; y: number; time: number } | null;
+  /** Highest noise sequence number already reacted to, so one ripple triggers once. */
+  lastHeardSeq: number;
+  homeRoomId: string;
+  waypoints: { x: number; y: number }[];
+  waypointIndex: number;
+  path: { x: number; y: number }[];
+  pathIndex: number;
+  lastSeenX: number;
+  lastSeenY: number;
+  /** Seconds without line of sight to the player. */
+  lostTimer: number;
+  stateTimer: number;
+  lookTimer: number;
+  searchAngle: number;
+  strafeDir: 1 | -1;
+  strafeTimer: number;
+  stuckTimer: number;
+  burstTimer: number;
+  coverSpot: { x: number; y: number } | null;
+  coverTimer: number;
+}
+
+export type Team = 'PLAYER' | 'ENEMY';
+
+export interface TeamComponent {
+  team: Team;
+}
+
+/** Pooled bullet. Inactive projectiles keep their entity and node and are skipped by every system. */
+export interface ProjectileComponent {
+  active: boolean;
+  team: Team;
+  damage: number;
+  piercing: boolean;
+  bounces: number;
+  /** Seconds left before it despawns. */
+  life: number;
+  /** Entities already hit, so a piercing shot damages each only once. */
+  hit: number[];
+}
+
+/** Walk-over loot: a weapon (or ammo for the active weapon). */
+export interface PickupComponent {
+  kind: 'WEAPON' | 'AMMO';
+  /** Weapon id for kind WEAPON. */
+  weaponId: string | null;
+  /** Spare magazines of the receiving weapon this grants. */
+  ammo: number;
 }
 
 export interface RenderableComponent {
@@ -89,6 +138,7 @@ export interface IntentComponent {
   wantsReload: boolean;
   wantsDash: boolean;
   wantsInteract: boolean;
+  wantsSwap: boolean;
 }
 
 /** Tag: this entity's intent is filled from the InputManager. */
@@ -144,6 +194,9 @@ export interface ComponentMap {
   lifetime: LifetimeComponent;
   collider: ColliderComponent;
   fogged: FoggedComponent;
+  team: TeamComponent;
+  projectile: ProjectileComponent;
+  pickup: PickupComponent;
 }
 
 export function createTransform(x: number, y: number, angle = 0): TransformComponent {
@@ -159,6 +212,38 @@ export function createIntent(aimAngle = 0): IntentComponent {
     wantsReload: false,
     wantsDash: false,
     wantsInteract: false,
+    wantsSwap: false,
+  };
+}
+
+export function createAIController(
+  homeRoomId: string,
+  waypoints: { x: number; y: number }[],
+): AIControllerComponent {
+  return {
+    state: 'PATROL',
+    targetX: 0,
+    targetY: 0,
+    reactionTimer: 0,
+    lastHeardSound: null,
+    lastHeardSeq: -1,
+    homeRoomId,
+    waypoints,
+    waypointIndex: 0,
+    path: [],
+    pathIndex: 0,
+    lastSeenX: 0,
+    lastSeenY: 0,
+    lostTimer: 0,
+    stateTimer: 0,
+    lookTimer: 0,
+    searchAngle: 0,
+    strafeDir: Math.random() < 0.5 ? 1 : -1,
+    strafeTimer: 0,
+    stuckTimer: 0,
+    burstTimer: Math.random() * 1.5,
+    coverSpot: null,
+    coverTimer: 0,
   };
 }
 

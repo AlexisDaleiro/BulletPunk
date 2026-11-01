@@ -12,7 +12,42 @@ export const VIEW_SPAN = 720;
 export const COLORS = {
   background: 0x05060a,
   cyan: 0x00e5ff,
+  red: 0xff0055,
+  amber: 0xffe600,
   grid: 0x10202e,
+} as const;
+
+/** Shots despawn after travelling this far. */
+export const BULLET_RANGE = 900;
+/** Muzzle distance from the shooter's center, px. */
+export const MUZZLE_OFFSET = 20;
+/** Shot ripple radius per weapon noise profile, as a share of the 220 px SHOOT ripple. */
+export const NOISE_PROFILE_MULT = { SILENT: 0, MODERATE: 0.6, LOUD: 1, EXPLOSIVE: 1.4 } as const;
+
+/** Enemy bot tuning. Damage and fire-rate multipliers soften them via the passives mechanism. */
+export const ENEMY = {
+  hp: 40,
+  runSpeed: 170,
+  turnRate: 8,
+  fov: (65 * Math.PI) / 180,
+  range: 350,
+  /** A ripple is heard when its origin is within this + its current radius. */
+  hearing: 500,
+  /** Seconds between spotting the player and opening fire: [min, max]. */
+  reaction: [0.15, 0.3],
+  /** Move input while patrolling: below SNEAK_INPUT, so patrols are silent. */
+  patrolInput: 0.45,
+  investigateInput: 0.8,
+  combatInput: 0.9,
+  /** Preferred fighting distance, px. */
+  engageDistance: 200,
+  damageMult: 0.5,
+  fireRateMult: 0.7,
+  /** Fire for burstOn seconds, then pause burstOff. */
+  burstOn: 0.6,
+  burstOff: 0.9,
+  /** Share of max HP below which a bot runs for cover. */
+  coverHpFraction: 0.3,
 } as const;
 
 export const LOCOMOTION = {

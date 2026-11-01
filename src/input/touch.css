@@ -84,3 +84,7 @@
 .touch-btn.reload {
   bottom: calc(184px + env(safe-area-inset-bottom, 0px));
 }
+
+.touch-btn.swap {
+  bottom: calc(264px + env(safe-area-inset-bottom, 0px));
+}

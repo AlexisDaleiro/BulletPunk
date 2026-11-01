@@ -6,6 +6,7 @@ export interface ActionEdges {
   dash: boolean;
   reload: boolean;
   interact: boolean;
+  swap: boolean;
 }
 
 function div(className: string): HTMLDivElement {
@@ -80,6 +81,7 @@ export class TouchControls {
     this.edges = edges;
     this.root.style.setProperty('--stick-r', `${STICK_RADIUS}px`);
     this.root.append(this.move.base, this.aim.base);
+    this.addButton('SWAP', 'swap', 'swap');
     this.addButton('RELOAD', 'reload', 'reload');
     this.addButton('HACK', 'interact', 'interact');
     this.addButton('DASH', 'dash', 'dash');

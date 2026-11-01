@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { createWeaponInventory } from '../combat/weapons';
 import { COLORS, PLAYER_COLLIDER_HALF } from '../config';
 import {
   createHealth,
@@ -32,6 +33,8 @@ export function createPlayer(world: World, render: RenderSystem, x: number, y: n
     .add(player, 'noiseEmitter', createNoiseEmitter())
     .add(player, 'passiveSynergy', createPassiveSynergy())
     .add(player, 'vision', createVision())
+    .add(player, 'weaponInventory', createWeaponInventory(['PLASMA_PISTOL']))
+    .add(player, 'team', { team: 'PLAYER' })
     .add(player, 'collider', { halfSize: PLAYER_COLLIDER_HALF })
     .add(player, 'playerControlled', {});
   render.attach(world, player, 'entities', createOperativeGraphic(COLORS.cyan));

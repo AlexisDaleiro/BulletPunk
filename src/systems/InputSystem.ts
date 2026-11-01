@@ -32,6 +32,7 @@ export class InputSystem implements System {
       intent.wantsReload = s.reload;
       intent.wantsDash = s.dash;
       intent.wantsInteract = s.interact;
+      intent.wantsSwap = s.swap;
     });
   }
 }

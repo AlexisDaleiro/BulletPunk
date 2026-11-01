@@ -22,6 +22,9 @@ export class LocomotionSystem implements System {
         loc.dashTimer = loc.dashDuration;
         loc.dashCooldownTimer = loc.dashCooldown;
         loc.trailTimer = 0;
+        // Cyber-dash grants i-frames for its whole duration.
+        const health = world.get(entity, 'health');
+        if (health) health.invulnerableTimer = Math.max(health.invulnerableTimer, loc.dashDuration);
         // Dash where you move, or straight ahead when standing still.
         loc.dashDirX = mag > IDLE_INPUT ? intent.moveX / inputLen : Math.cos(t.angle);
         loc.dashDirY = mag > IDLE_INPUT ? intent.moveY / inputLen : Math.sin(t.angle);
