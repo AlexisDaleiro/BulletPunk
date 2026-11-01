@@ -114,6 +114,11 @@ export interface LocomotionComponent {
   gait: Gait;
 }
 
+/** Square collision box against solid tiles, centered on the transform. */
+export interface ColliderComponent {
+  halfSize: number;
+}
+
 /** Entity is destroyed after `duration` seconds, fading from `startAlpha` if it has a node. */
 export interface LifetimeComponent {
   age: number;
@@ -134,6 +139,7 @@ export interface ComponentMap {
   playerControlled: PlayerControlledComponent;
   locomotion: LocomotionComponent;
   lifetime: LifetimeComponent;
+  collider: ColliderComponent;
 }
 
 export function createTransform(x: number, y: number, angle = 0): TransformComponent {

@@ -1,9 +1,8 @@
-import { Graphics } from 'pixi.js';
-import { COLORS, TILE_SIZE } from './config';
 import { Game } from './core/Game';
 import { createPlayer } from './entities/player';
 import { InputManager } from './input/InputManager';
 import { NoiseField } from './noise/NoiseField';
+import { buildTilemapGraphics } from './render/TilemapRenderer';
 import { DashTrailSystem } from './systems/DashTrailSystem';
 import { InputSystem } from './systems/InputSystem';
 import { LifetimeSystem } from './systems/LifetimeSystem';
@@ -12,6 +11,7 @@ import { NoiseEmitterSystem } from './systems/NoiseEmitterSystem';
 import { NoisePropagationSystem } from './systems/NoisePropagationSystem';
 import { PhysicsSystem } from './systems/PhysicsSystem';
 import { RenderSystem } from './systems/RenderSystem';
+import { generateDungeon } from './world/DungeonGenerator';
 
 const host = document.getElementById('app');
 if (!host) throw new Error('#app host element missing');
@@ -20,11 +20,12 @@ const game = new Game();
 const render = new RenderSystem(game.app, game.world);
 const input = new InputManager(host);
 const noise = new NoiseField();
+const physics = new PhysicsSystem();
 
 // Pipeline order. Physics goes before Locomotion so its prev-state snapshot precedes the angle change.
 game
   .addSystem(new InputSystem(input, render))
-  .addSystem(new PhysicsSystem())
+  .addSystem(physics)
   .addSystem(new LocomotionSystem())
   .addSystem(new NoiseEmitterSystem(noise))
   .addSystem(new NoisePropagationSystem(noise))
@@ -33,19 +34,16 @@ game
   .addSystem(render);
 await game.start(host);
 
-// Placeholder floor until the dungeon arrives in Milestone 3.
-const GRID_TILES = 200;
-const GRID_SIZE = GRID_TILES * TILE_SIZE;
-const grid = new Graphics();
-for (let i = 0; i <= GRID_TILES; i++) {
-  const p = i * TILE_SIZE;
-  grid.moveTo(p, 0).lineTo(p, GRID_SIZE).moveTo(0, p).lineTo(GRID_SIZE, p);
-}
-grid.stroke({ width: 1, color: COLORS.grid });
-render.layers.floor.addChild(grid);
+// `?seed=123` replays a dungeon; otherwise each load is new.
+const seedParam = Number(new URLSearchParams(location.search).get('seed'));
+const seed = Number.isInteger(seedParam) && seedParam > 0 ? seedParam : Date.now() >>> 0;
+const dungeon = generateDungeon(seed);
+console.info(`dungeon seed ${seed}: ${dungeon.rooms.length} rooms`);
+physics.map = dungeon.map;
+render.layers.floor.addChild(buildTilemapGraphics(dungeon.map));
 
-const player = createPlayer(game.world, render, GRID_SIZE / 2, GRID_SIZE / 2);
+const player = createPlayer(game.world, render, dungeon.spawn.x, dungeon.spawn.y);
 render.cameraTarget = player;
 
 // Handles for poking at the running game from the devtools console.
-if (import.meta.env.DEV) Object.assign(window, { game, noise, player });
+if (import.meta.env.DEV) Object.assign(window, { game, noise, player, dungeon });

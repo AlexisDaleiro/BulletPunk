@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { COLORS } from '../config';
+import { COLORS, PLAYER_COLLIDER_HALF } from '../config';
 import {
   createHealth,
   createIntent,
@@ -30,6 +30,7 @@ export function createPlayer(world: World, render: RenderSystem, x: number, y: n
     .add(player, 'health', createHealth())
     .add(player, 'noiseEmitter', createNoiseEmitter())
     .add(player, 'passiveSynergy', createPassiveSynergy())
+    .add(player, 'collider', { halfSize: PLAYER_COLLIDER_HALF })
     .add(player, 'playerControlled', {});
   render.attach(world, player, 'entities', createOperativeGraphic(COLORS.cyan));
   return player;

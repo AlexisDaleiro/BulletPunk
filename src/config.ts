@@ -27,6 +27,23 @@ export const LOCOMOTION = {
 } as const;
 
 export const PLAYER_VITALS = { hp: 100, shield: 50 } as const;
+/** Half-extent of the player's square collision box, px. */
+export const PLAYER_COLLIDER_HALF = 11;
+
+/** Dungeon sizes are in tiles. */
+export const DUNGEON = {
+  width: 60,
+  height: 60,
+  /** Smallest BSP leaf edge. Must be >= roomMin + 2 (1 tile of padding each side). */
+  minLeaf: 12,
+  /** Leaves at or below this edge may stop splitting early. */
+  maxLeaf: 30,
+  roomMin: 6,
+  roomMax: 14,
+  corridorWidth: 2,
+  /** Extra corridors beyond the spanning tree, as a fraction of its edge count. */
+  loopFraction: 0.15,
+} as const;
 
 /** Input magnitude (stick or keys) below which the gait is SNEAK: slow and silent. */
 export const SNEAK_INPUT = 0.6;
