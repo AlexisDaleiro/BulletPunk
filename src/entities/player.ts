@@ -7,6 +7,7 @@ import {
   createNoiseEmitter,
   createPassiveSynergy,
   createTransform,
+  createVision,
 } from '../ecs/components';
 import type { Entity, World } from '../ecs/World';
 import type { RenderSystem } from '../systems/RenderSystem';
@@ -30,6 +31,7 @@ export function createPlayer(world: World, render: RenderSystem, x: number, y: n
     .add(player, 'health', createHealth())
     .add(player, 'noiseEmitter', createNoiseEmitter())
     .add(player, 'passiveSynergy', createPassiveSynergy())
+    .add(player, 'vision', createVision())
     .add(player, 'collider', { halfSize: PLAYER_COLLIDER_HALF })
     .add(player, 'playerControlled', {});
   render.attach(world, player, 'entities', createOperativeGraphic(COLORS.cyan));

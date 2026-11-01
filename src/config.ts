@@ -30,6 +30,15 @@ export const PLAYER_VITALS = { hp: 100, shield: 50 } as const;
 /** Half-extent of the player's square collision box, px. */
 export const PLAYER_COLLIDER_HALF = 11;
 
+/** Player vision: an 80-degree cone out to `range`, plus a 360-degree ring of `proximity` px. */
+export const VISION = {
+  fov: (80 * Math.PI) / 180,
+  range: 420,
+  proximity: 65,
+} as const;
+/** Share of the map still visible in explored areas outside the light (unexplored stays black). */
+export const FOG_MEMORY_ALPHA = 0.05;
+
 /** Dungeon sizes are in tiles. */
 export const DUNGEON = {
   width: 60,

@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 // `.ts` extension: Node's test runner needs it for runtime imports (type imports are erased).
-import { LOCOMOTION, NOISE_PROFILES, PLAYER_VITALS } from '../config.ts';
+import { LOCOMOTION, NOISE_PROFILES, PLAYER_VITALS, VISION } from '../config.ts';
 import type { CyberwarePassive, WeaponDefinition } from '../types';
 
 export interface TransformComponent {
@@ -114,6 +114,9 @@ export interface LocomotionComponent {
   gait: Gait;
 }
 
+/** Tag: the renderable is hidden whenever it lies outside the player's visibility polygon. */
+export type FoggedComponent = Record<string, never>;
+
 /** Square collision box against solid tiles, centered on the transform. */
 export interface ColliderComponent {
   halfSize: number;
@@ -140,6 +143,7 @@ export interface ComponentMap {
   locomotion: LocomotionComponent;
   lifetime: LifetimeComponent;
   collider: ColliderComponent;
+  fogged: FoggedComponent;
 }
 
 export function createTransform(x: number, y: number, angle = 0): TransformComponent {
@@ -172,6 +176,10 @@ export function createLocomotion(): LocomotionComponent {
 
 export function createHealth(hp: number = PLAYER_VITALS.hp, shield: number = PLAYER_VITALS.shield): HealthComponent {
   return { hp, maxHp: hp, shield, maxShield: shield, invulnerableTimer: 0 };
+}
+
+export function createVision(): VisionComponent {
+  return { fov: VISION.fov, range: VISION.range, proximityRadius: VISION.proximity, polygon: [] };
 }
 
 export function createNoiseEmitter(): NoiseEmitterComponent {

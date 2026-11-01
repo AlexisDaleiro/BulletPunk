@@ -11,7 +11,11 @@ import { NoiseEmitterSystem } from './systems/NoiseEmitterSystem';
 import { NoisePropagationSystem } from './systems/NoisePropagationSystem';
 import { PhysicsSystem } from './systems/PhysicsSystem';
 import { RenderSystem } from './systems/RenderSystem';
+import { FogSystem } from './systems/FogSystem';
+import { RippleRenderSystem } from './systems/RippleRenderSystem';
+import { VisionRaycastSystem } from './systems/VisionRaycastSystem';
 import { generateDungeon } from './world/DungeonGenerator';
+import { extractWallEdges } from './world/wallEdges';
 
 const host = document.getElementById('app');
 if (!host) throw new Error('#app host element missing');
@@ -21,6 +25,8 @@ const render = new RenderSystem(game.app, game.world);
 const input = new InputManager(host);
 const noise = new NoiseField();
 const physics = new PhysicsSystem();
+const vision = new VisionRaycastSystem();
+const fog = new FogSystem(render);
 
 // Pipeline order. Physics goes before Locomotion so its prev-state snapshot precedes the angle change.
 game
@@ -31,6 +37,9 @@ game
   .addSystem(new NoisePropagationSystem(noise))
   .addSystem(new DashTrailSystem(render))
   .addSystem(new LifetimeSystem())
+  .addSystem(vision)
+  .addSystem(fog)
+  .addSystem(new RippleRenderSystem(render, noise))
   .addSystem(render);
 await game.start(host);
 
@@ -40,6 +49,8 @@ const seed = Number.isInteger(seedParam) && seedParam > 0 ? seedParam : Date.now
 const dungeon = generateDungeon(seed);
 console.info(`dungeon seed ${seed}: ${dungeon.rooms.length} rooms`);
 physics.map = dungeon.map;
+vision.segments = extractWallEdges(dungeon.map);
+fog.setMap(dungeon.map);
 render.layers.floor.addChild(buildTilemapGraphics(dungeon.map));
 
 const player = createPlayer(game.world, render, dungeon.spawn.x, dungeon.spawn.y);
