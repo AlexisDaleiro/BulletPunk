@@ -1,0 +1,86 @@
+.touch-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  touch-action: none;
+  font-family: monospace;
+}
+
+.stick-base {
+  position: absolute;
+  left: calc(var(--stick-r) * -1);
+  top: calc(var(--stick-r) * -1);
+  width: calc(var(--stick-r) * 2);
+  height: calc(var(--stick-r) * 2);
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 229, 255, 0.5);
+  background: rgba(0, 229, 255, 0.06);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stick-base.aim {
+  border-color: rgba(255, 0, 85, 0.55);
+  background: rgba(255, 0, 85, 0.06);
+  box-shadow: 0 0 16px rgba(255, 0, 85, 0.25);
+}
+
+.stick-base.on {
+  opacity: 1;
+}
+
+.stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid #00e5ff;
+  background: rgba(0, 229, 255, 0.3);
+}
+
+.stick-base.aim .stick-knob {
+  border-color: #ff0055;
+  background: rgba(255, 0, 85, 0.3);
+}
+
+.touch-btn {
+  position: absolute;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 229, 255, 0.7);
+  background: rgba(0, 229, 255, 0.1);
+  color: #00e5ff;
+  font: 700 11px monospace;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+  touch-action: none;
+}
+
+.touch-btn.on {
+  background: rgba(0, 229, 255, 0.45);
+}
+
+.touch-btn.dash {
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.touch-btn.interact {
+  bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  border-color: rgba(255, 230, 0, 0.7);
+  color: #ffe600;
+  background: rgba(255, 230, 0, 0.1);
+  box-shadow: 0 0 12px rgba(255, 230, 0, 0.3);
+}
+
+.touch-btn.reload {
+  bottom: calc(184px + env(safe-area-inset-bottom, 0px));
+}

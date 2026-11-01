@@ -62,6 +62,14 @@ export class RenderSystem implements System {
     world.add(entity, 'renderable', { node });
   }
 
+  /** Converts a point in canvas CSS px to world px using the last rendered camera. */
+  screenToWorld(sx: number, sy: number): { x: number; y: number } {
+    return {
+      x: (sx - this.scene.position.x) / this.scene.scale.x,
+      y: (sy - this.scene.position.y) / this.scene.scale.y,
+    };
+  }
+
   render(world: World, alpha: number, frameDt: number): void {
     world.each(['transform', 'renderable'], (_, t, r) => {
       r.node.position.set(lerp(t.prevX, t.x, alpha), lerp(t.prevY, t.y, alpha));
