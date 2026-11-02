@@ -50,6 +50,8 @@ export class RunController implements System {
   elapsed = 0;
   /** Called after the death delay; the UI shows the game-over screen. */
   onGameOver: ((info: RunInfo) => void) | null = null;
+  /** Called whenever the run starts, ends, dies or a menu opens or closes. */
+  onChange: (() => void) | null = null;
 
   private readonly deps: RunDeps;
   private recorded = false;
@@ -106,6 +108,7 @@ export class RunController implements System {
   setMenuOpen(open: boolean): void {
     this.deps.game.setPause('menu', open);
     this.deps.input.setActive(!open && this.active && !this.over);
+    this.onChange?.();
   }
 
   /** Saves the run in progress as abandoned; also used on `pagehide`, when the tab closes mid-run. */
@@ -134,6 +137,7 @@ export class RunController implements System {
     if (!this.active || this.over) return;
     this.over = true;
     this.endRun();
+    this.onChange?.();
     this.gameOverTimer = setTimeout(() => {
       this.gameOverTimer = null;
       this.setMenuOpen(true);

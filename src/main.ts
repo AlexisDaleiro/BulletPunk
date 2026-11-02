@@ -141,8 +141,7 @@ const ui = new UI({
 game.app.canvas.style.visibility = 'hidden';
 ui.open('title');
 
-// TEMP until the pause and game-over screens land: a death starts a new run.
-run.onGameOver = () => run.startRun(run.character.id);
+run.onGameOver = (info) => ui.openGameOver(info);
 
 // Handles for poking at the running game from the devtools console.
 if (import.meta.env.DEV) Object.assign(window, { game, noise, state, levels, projectiles, audio, run, profile, settings, render, ui });

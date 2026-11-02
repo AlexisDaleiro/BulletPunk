@@ -42,6 +42,20 @@ export function confirmButton(label: string, confirmLabel: string, onConfirm: ()
   return b;
 }
 
+/** Copies `getText()` to the clipboard and says so on the button for a moment. */
+export function copyButton(label: string, getText: () => string): HTMLButtonElement {
+  const b = button(label, () => {
+    const say = (text: string): void => {
+      b.textContent = text;
+      setTimeout(() => (b.textContent = label), 1500);
+    };
+    const write = navigator.clipboard?.writeText(getText());
+    if (write) write.then(() => say('COPIED'), () => say('COPY FAILED'));
+    else say('COPY FAILED');
+  });
+  return b;
+}
+
 /** An ON/OFF button. `set` updates it from outside without firing `onChange`. */
 export function toggle(onChange: (on: boolean) => void): { el: HTMLButtonElement; set(on: boolean): void } {
   const set = (on: boolean): void => {

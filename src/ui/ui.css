@@ -283,6 +283,81 @@
   color: var(--amber);
 }
 
+/* Pause and game over */
+.panel.pause {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  width: min(620px, 100%);
+}
+
+.panel.pause .heading {
+  grid-column: 1 / -1;
+}
+
+.panel.over {
+  width: min(420px, 100%);
+}
+
+.heading.lost {
+  color: var(--mag);
+  text-shadow: 0 0 12px var(--mag);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.stat.block {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row.seed {
+  min-height: 44px;
+  font-size: 12px;
+}
+
+.row.seed .name {
+  min-width: 0;
+  flex: 1;
+}
+
+@media (max-width: 520px) and (min-height: 431px) {
+  .panel.pause {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Touch pause button: top centre, clear of the bars (left), the minimap (right) and the sticks. */
+.pause-btn {
+  position: fixed;
+  z-index: 20;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  color: #00e5ff;
+  font: 700 16px monospace;
+  letter-spacing: 0;
+}
+
+.pause-btn[hidden] {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pause-btn {
+    display: none;
+  }
+}
+
 /* Operative cards */
 .cards {
   display: grid;
