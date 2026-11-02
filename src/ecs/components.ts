@@ -27,6 +27,7 @@ export interface HealthComponent {
   /** Expires separately, without changing maxShield or implant regeneration. */
   temporaryShield?: number;
   hitFlash?: number;
+  damageTakenMult?: number;
 }
 
 export interface CharacterComponent {
@@ -82,6 +83,7 @@ export type AIState =
   | 'SEARCH_LOST_TARGET';
 
 export interface AIControllerComponent {
+  disruptedTimer: number;
   state: AIState;
   /** Where the bot is heading: noise origin or last known player position. */
   targetX: number;
@@ -238,6 +240,7 @@ export interface LifetimeComponent {
 }
 
 export interface ComponentMap {
+  elite: { bonusCredits: number };
   enemyVisual: { appearance: EnemyAppearance; recoil: number };
   pickupVisual: { age: number; phase: number };
   particle: { drag: number; spin: number };
@@ -288,6 +291,7 @@ export function createAIController(
 ): AIControllerComponent {
   return {
     state: 'PATROL',
+    disruptedTimer: 0,
     targetX: 0,
     targetY: 0,
     reactionTimer: 0,

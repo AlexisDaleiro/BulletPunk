@@ -83,6 +83,10 @@ export class AISystem implements System {
     intent.moveX = 0;
     intent.moveY = 0;
     intent.wantsFire = intent.wantsReload = intent.wantsSwap = intent.wantsDash = intent.wantsInteract = false;
+    if (ai.disruptedTimer > 0) {
+      ai.disruptedTimer = Math.max(0, ai.disruptedTimer - dt);
+      return;
+    }
     ai.stateTimer += dt;
 
     // Once engaged a bot tracks the player all-round (it is looking right at them); otherwise it needs the cone.

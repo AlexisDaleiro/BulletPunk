@@ -1,9 +1,9 @@
 import type { WeaponId } from '../combat/weapons.ts';
 import type { CyberwarePassive } from '../types.ts';
 
-export type CharacterId = 'NIX' | 'BRASA' | 'VECTOR';
+export type CharacterId = 'NIX' | 'BRASA' | 'VECTOR' | 'SUTURA' | 'VOLT' | 'MORSA';
 export interface AbilityDef {
-  kind: 'GHOST_STEP' | 'OVERLOAD' | 'OPTICAL_SWEEP';
+  kind: 'GHOST_STEP' | 'OVERLOAD' | 'OPTICAL_SWEEP' | 'REPAIR' | 'EMP_PULSE' | 'ANCHOR';
   name: string;
   description: string;
   duration: number;
@@ -12,6 +12,10 @@ export interface AbilityDef {
   movementNoiseMult?: number;
   shieldAmount?: number;
   visionMult?: number;
+  healPerSecond?: number;
+  pulseRadius?: number;
+  damageTakenMult?: number;
+  damageMult?: number;
 }
 
 export interface CharacterDef {
@@ -59,6 +63,30 @@ export const CHARACTERS: readonly CharacterDef[] = [
     hp: 90, shield: 45, moveSpeed: 0.96, weapon: 'LANCE_RIFLE',
     passive: { id: 'TELEMETRY', name: 'TELEMETRÍA', description: '+10% alcance de visión.', cost: 0, modifiers: { visionRangeMult: 1.1 } },
     ability: { kind: 'OPTICAL_SWEEP', name: 'BARRIDO ÓPTICO', description: '+45% alcance de visión frontal durante 4 s. Los obstáculos siguen bloqueando la vista.', duration: 4, cooldown: 14, visionMult: 1.45 },
+  },
+  {
+    id: 'SUTURA', name: 'SUTURA', role: 'SUPERVIVENCIA', color: 0xf298b0,
+    palette: { cloth: 0x344345, armor: 0xb5beb2, light: 0xf2ecda, metal: 0x809d97 },
+    description: 'Mantén el pulso. Vuelve a la pelea.', weakness: 'Protección moderada · curación gradual',
+    hp: 95, shield: 40, moveSpeed: 1, weapon: 'PULSE_CARBINE',
+    passive: { id: 'BIOCELL', name: 'BIOCELDA', description: 'Regenera 1.5 de escudo por segundo.', cost: 0, modifiers: { shieldRegenRate: 1.5 } },
+    ability: { kind: 'REPAIR', name: 'REPARACIÓN BIÓTICA', description: 'Recupera hasta 30 de vida durante 3 s. Puedes seguir moviéndote y disparando.', duration: 3, cooldown: 18, healPerSecond: 10 },
+  },
+  {
+    id: 'VOLT', name: 'VOLT', role: 'CONTROL', color: 0x8bc6fb,
+    palette: { cloth: 0x29394b, armor: 0xb59e53, light: 0xf2dc8e, metal: 0x869cab },
+    description: 'Interrumpe su respuesta. Abre una ventana.', weakness: 'Poca vida · pulso de corto alcance',
+    hp: 80, shield: 45, moveSpeed: 1.12, weapon: 'ARC_SMG',
+    passive: { id: 'QUICK_SERVOS', name: 'SERVOS RÁPIDOS', description: '+8% cadencia de disparo.', cost: 0, modifiers: { fireRateMult: 1.08 } },
+    ability: { kind: 'EMP_PULSE', name: 'PULSO DE INTERFERENCIA', description: 'Detiene el movimiento y los disparos de enemigos a 170 px durante 2 s. Las paredes bloquean el pulso.', duration: 2, cooldown: 16, pulseRadius: 170 },
+  },
+  {
+    id: 'MORSA', name: 'MORSA', role: 'FUEGO DE APOYO', color: 0xb4cc7b,
+    palette: { cloth: 0x354130, armor: 0x74825c, light: 0xd7d9ad, metal: 0x9aa68d },
+    description: 'Sostén la posición. Mantén la presión.', weakness: 'Lento · recarga prolongada',
+    hp: 130, shield: 50, moveSpeed: 0.8, weapon: 'BELT_LMG',
+    passive: { id: 'LOAD_FRAME', name: 'ARNÉS PESADO', description: '130 de vida base y cargador de 44 disparos.', cost: 0, modifiers: {} },
+    ability: { kind: 'ANCHOR', name: 'ANCLAJE', description: 'Durante 4 s recibe un 45% menos de daño y causa un 20% más. Se mueve un 35% más lento.', duration: 4, cooldown: 17, damageTakenMult: 0.55, damageMult: 1.2, speedMult: 0.65 },
   },
 ];
 

@@ -9,6 +9,8 @@ const hex = (color: number): string => `#${color.toString(16).padStart(6, '0')}`
 export function characterScreen(ctx: UiContext): HTMLElement {
   const { profile } = ctx;
   const cards = el('div', 'cards');
+  const briefing = el('aside', 'operative-briefing');
+  briefing.setAttribute('aria-live', 'polite');
   const buttons = new Map<string, HTMLButtonElement>();
   const deploy = button('', () => {
     ctx.close();
@@ -21,6 +23,19 @@ export function characterScreen(ctx: UiContext): HTMLElement {
     for (const [id, b] of buttons) b.setAttribute('aria-pressed', String(id === def.id));
     deploy.textContent = `DESPLEGAR A ${def.name} →`;
     selected.textContent = `${def.name} / ${def.role}`;
+    briefing.style.setProperty('--c', hex(def.color));
+    const preview = operativePreview(ctx.renderer, def);
+    preview.className = 'briefing-preview';
+    briefing.replaceChildren(
+      el('span', 'card-role', def.role), preview,
+      el('strong', 'briefing-name', def.name), el('p', 'briefing-description', def.description),
+      el('span', 'card-stat', `VIDA ${def.hp} · ESCUDO ${def.shield} · VEL ${Math.round(def.moveSpeed * 100)}%`),
+      el('span', 'card-stat', WEAPONS[def.weapon].name),
+      el('strong', 'card-ability', def.ability.name), el('p', 'briefing-description', def.ability.description),
+      el('span', 'card-timing', `${def.ability.duration} s activa / ${def.ability.cooldown} s recarga`),
+      el('p', 'briefing-passive', `${def.passive.name}: ${def.passive.description}`),
+      el('span', 'card-weakness', def.weakness),
+    );
   };
 
   for (const def of CHARACTERS) {
@@ -32,14 +47,9 @@ export function characterScreen(ctx: UiContext): HTMLElement {
       el('span', 'card-role', `0${CHARACTERS.indexOf(def) + 1} / ${def.role}`),
       preview,
       el('strong', 'card-name', def.name),
-      el('span', 'card-desc', def.description),
-      el('span', 'card-stat', `VIDA ${def.hp} · ESCUDO ${def.shield} · VEL ${Math.round(def.moveSpeed * 100)}%`),
+      el('span', 'card-stat', `VIDA ${def.hp} · ESCUDO ${def.shield}`),
       el('span', 'card-stat', WEAPONS[def.weapon].name),
       el('span', 'card-ability', def.ability.name),
-      el('span', 'card-ability-desc', def.ability.description),
-      el('span', 'card-timing', `${def.ability.duration} s activa / ${def.ability.cooldown} s recarga`),
-      el('span', 'card-perk', `${def.passive.name}: ${def.passive.description}`),
-      el('span', 'card-weakness', def.weakness),
     );
     card.type = 'button';
     card.style.setProperty('--c', hex(def.color));
@@ -54,8 +64,8 @@ export function characterScreen(ctx: UiContext): HTMLElement {
   buttons.get(getCharacter(profile.value.lastCharacter).id)?.setAttribute('data-autofocus', '');
 
   return el('div', 'panel operative-select',
-    el('div', 'roster-header', el('span', 'roster-kicker', 'BULLETPUNK / PROTOCOLO DE DESPLIEGUE'), el('h2', 'roster-title', 'Elige tu operativo'), el('p', 'roster-subtitle', 'Tres formas de entrar. Una salida.')),
-    cards,
+    el('div', 'roster-header', el('span', 'roster-kicker', 'BULLETPUNK / PROTOCOLO DE DESPLIEGUE'), el('h2', 'roster-title', 'Elige tu operativo'), el('p', 'roster-subtitle', 'Seis formas de entrar. Una salida.')),
+    el('div', 'roster-shell', cards, briefing),
     el('div', 'roster-footer', button('VOLVER', ctx.back), selected, deploy),
     el('p', 'roster-controls', 'WASD mover · Ratón apuntar · F habilidad · Espacio dash · Q cambiar arma'),
   );

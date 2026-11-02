@@ -447,6 +447,35 @@
   .roster-footer .primary { width: 100%; }
 }
 
+.roster-shell { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; }
+.roster-shell .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; }
+.operative-select .roster-shell .card { padding: 12px; gap: 6px; }
+.operative-select .roster-shell .card-preview { width: 106px; height: 84px; }
+.operative-select .roster-shell .card-name { font-size: 22px; }
+.operative-select .roster-shell .card-ability { margin-top: 3px; padding-top: 7px; font-size: 9px; }
+.operative-select .roster-shell .card-role { font-size: 8px; }
+.operative-select .roster-shell .card-stat { font-size: 8px; }
+.operative-briefing { padding: 18px; display: flex; flex-direction: column; align-items: stretch; gap: 9px; min-width: 0; border: 1px solid #3b4c56; border-top: 3px solid var(--c); background: #0c151c; }
+.briefing-preview { width: 150px; height: 120px; align-self: center; object-fit: contain; }
+.briefing-name { color: var(--c); font: 800 30px/1 system-ui, sans-serif; }
+.briefing-description { margin: 0; color: #bdcbd0; font: 12px/1.5 system-ui, sans-serif; }
+.briefing-passive { margin: 4px 0; font: 11px/1.5 system-ui, sans-serif; color: #a5b6ba; }
+@media (max-height: 760px) and (min-width: 901px) {
+  .operative-select .roster-shell .card-preview { height: 65px; }
+  .briefing-preview { height: 80px; }
+  .operative-select .roster-shell .card { padding: 9px; gap: 5px; }
+  .operative-briefing { padding: 12px; gap: 7px; }
+}
+@media (max-width: 900px) {
+  .roster-shell { grid-template-columns: 1fr; }
+  .operative-briefing { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  .briefing-preview { grid-row: span 3; justify-self: center; }
+}
+@media (max-width: 520px) {
+  .roster-shell .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .operative-briefing { display: flex; }
+}
+
 .card-name {
   color: var(--c);
   font-size: 14px;

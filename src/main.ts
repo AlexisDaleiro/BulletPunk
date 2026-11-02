@@ -10,6 +10,7 @@ import { ProfileStore } from './profile/ProfileStore';
 import { RunController } from './run/RunController';
 import { SettingsStore } from './settings/SettingsStore';
 import { AISystem } from './systems/AISystem';
+import { AimGuideSystem } from './systems/AimGuideSystem';
 import { AudioSystem } from './systems/AudioSystem';
 import { DashTrailSystem } from './systems/DashTrailSystem';
 import { EnvironmentSystem } from './systems/EnvironmentSystem';
@@ -55,12 +56,15 @@ const interact = new InteractSystem(render, noise, state, audio);
 const environment = new EnvironmentSystem(render, noise, audio, state);
 const vision = new VisionRaycastSystem();
 const fog = new FogSystem(render);
+const aimGuide = new AimGuideSystem(render);
+const characters = new CharacterSystem(render);
 const hud = new HudSystem(render, state, fog);
 hud.onAbilityStatus = (text, ready, active) => input.setAbilityStatus(text, ready, active);
 const health = new HealthSystem(render, audio);
 const pickups = new PickupSystem(state, audio, render);
-health.onKill = () => {
+health.onKill = (elite) => {
   state.kills++;
+  if (elite) state.toast('BASTIÓN NEUTRALIZADO · BOTÍN DE ÉLITE', 3);
 };
 
 const levels = new LevelManager({
@@ -72,7 +76,7 @@ const levels = new LevelManager({
   audio,
   fog,
   vision,
-  mapUsers: [physics, ai, weapons, projectileHits, pickups],
+  mapUsers: [physics, ai, weapons, projectileHits, pickups, aimGuide, characters],
   levelUsers: [interact, projectileHits, hud, environment],
 });
 interact.onDescend = () => levels.requestDescend();
@@ -87,7 +91,7 @@ game
   .addSystem(new InputSystem(input, render, state))
   .addSystem(ai)
   .addSystem(physics)
-  .addSystem(new CharacterSystem(render))
+  .addSystem(characters)
   .addSystem(new LocomotionSystem())
   .addSystem(weapons)
   .addSystem(projectileHits)
@@ -102,6 +106,7 @@ game
   .addSystem(new LifetimeSystem())
   .addSystem(vision)
   .addSystem(fog)
+  .addSystem(aimGuide)
   .addSystem(new AudioSystem(audio))
   .addSystem(new RippleRenderSystem(render, noise))
   .addSystem(hud)

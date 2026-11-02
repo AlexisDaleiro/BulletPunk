@@ -3,6 +3,21 @@ import type { WeaponDefinition } from '../types';
 
 /** The arsenal. Fire rate is rounds/s, spread is the total cone in radians, speed is px/s. */
 export const WEAPONS = {
+  PULSE_CARBINE: {
+    id: 'PULSE_CARBINE', name: 'LATIDO / CARABINA', type: 'PLASMA_RIFLE',
+    damagePerPellet: 15, pelletCount: 1, spreadAngle: 0.035, fireRate: 5,
+    magazineSize: 18, reloadTime: 1.6, projectileSpeed: 1050, range: 470, noiseProfile: 'MODERATE',
+  },
+  ARC_SMG: {
+    id: 'ARC_SMG', name: 'ARCO / SUBFUSIL', type: 'SMG',
+    damagePerPellet: 7, pelletCount: 1, spreadAngle: 0.11, fireRate: 11,
+    magazineSize: 24, reloadTime: 1.4, projectileSpeed: 820, range: 360, noiseProfile: 'LOUD',
+  },
+  BELT_LMG: {
+    id: 'BELT_LMG', name: 'LASTRE / AMETRALLADORA', type: 'PLASMA_RIFLE',
+    damagePerPellet: 6, pelletCount: 1, spreadAngle: 0.12, fireRate: 11,
+    magazineSize: 44, reloadTime: 3, projectileSpeed: 900, range: 470, noiseProfile: 'LOUD',
+  },
   HUSH_SMG: {
     id: 'HUSH_SMG', name: 'HUSH / SUBFUSIL', type: 'SMG',
     damagePerPellet: 8, pelletCount: 1, spreadAngle: 0.08, fireRate: 10,

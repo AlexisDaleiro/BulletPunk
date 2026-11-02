@@ -29,7 +29,7 @@ export class OperativeGraphic extends Container {
     this.def = def;
     this.renderer = renderer;
     const p = def.palette;
-    const heavy = def.id === 'BRASA' || def.silhouette === 'HEAVY';
+    const heavy = def.id === 'BRASA' || def.id === 'MORSA' || def.silhouette === 'HEAVY';
     const scout = def.id === 'VECTOR' || def.silhouette === 'SCOUT';
     const shoulder = heavy ? 13 : scout ? 11 : 9;
     const shadow = new Graphics().ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.38 });
@@ -106,6 +106,33 @@ export class OperativeGraphic extends Container {
         body.poly([-8, -11, -14, -14, -18, -6, -8, -4]).fill(p.armor).stroke({ color: INK, width: 1 });
       }
     }
+    if (def.id === 'SUTURA') {
+      body.roundRect(-14, -10, 9, 20, 2).fill(p.light).stroke({ color: INK, width: 1.5 });
+      body.rect(-12, -2, 5, 2).rect(-10.5, -4, 2, 6).fill(def.color);
+      body.roundRect(0, -7, 10, 12, 3).fill(p.light).stroke({ color: INK, width: 1 });
+      body.rect(8, -4, 3, 6).fill(0x425958);
+      body.rect(-3, 10, 7, 4).fill(def.color);
+    } else if (def.id === 'VOLT') {
+      body.poly([-7, -12, -17, -8, -19, 4, -12, 10, -7, 7]).fill(p.light).stroke({ color: INK, width: 1.5 });
+      body.circle(-11, -1, 4).fill(0x1d3146).stroke({ color: def.color, width: 1.5 });
+      body.moveTo(-13, -9).lineTo(-18, -17).moveTo(-11, 8).lineTo(-17, 16).stroke({ color: p.metal, width: 2 });
+      body.poly([2, -8, 10, -5, 12, 1, 4, 6, -1, 3]).fill(p.armor).stroke({ color: INK, width: 1 });
+      body.rect(9, -3, 3, 5).fill(def.color);
+    } else if (def.id === 'MORSA') {
+      body.roundRect(-17, -10, 8, 20, 2).fill(p.armor).stroke({ color: INK, width: 1.5 });
+      body.roundRect(-16, -6, 5, 12, 1).fill(0x303d31);
+      body.poly([-4, -18, 6, -17, 10, -10, -1, -8]).fill(p.light).stroke({ color: INK, width: 1.5 });
+      body.roundRect(0, -8, 13, 13, 2).fill(p.armor).stroke({ color: p.metal, width: 1 });
+      body.rect(10, -5, 4, 8).fill(INK);
+      body.rect(12, -4, 1.5, 5).fill(def.color);
+      for (let i = 0; i < 5; i++) body.rect(-6 + i * 3, 11, 2, 5).fill(0xc7ad73);
+    }
+    if (def.elite) {
+      body.poly([-5, -19, 6, -17, 8, -11, -2, -10]).fill(p.light).stroke({ color: INK, width: 1.2 });
+      body.poly([-4, 13, 5, 11, 8, 16, -2, 19]).fill(p.light).stroke({ color: INK, width: 1.2 });
+      body.moveTo(-4, -15).lineTo(0, -12).lineTo(4, -15).stroke({ color: def.color, width: 1.5 });
+      body.rect(-15, -6, 3, 12).fill(def.color);
+    }
     // Small abrasion marks rather than a full neon outline.
     body.moveTo(-2, -11).lineTo(1, -10).moveTo(-6, 4).lineTo(-4, 3).stroke({ color: p.light, width: 0.6, alpha: 0.7 });
     this.torso.addChild(body);
@@ -138,6 +165,15 @@ export class OperativeGraphic extends Container {
       g.rect(20, 6.5, 13, 1).fill(this.def.color);
       g.roundRect(16, 3, 8, 3, 1).fill(INK);
       g.circle(23, 4.5, 1).fill(this.def.color);
+    } else if (this.def.id === 'MORSA' && type === 'PLASMA_RIFLE') {
+      g.roundRect(13, 4, 13, 8, 1).fill(p.armor).stroke({ color: INK, width: 1 });
+      g.rect(25, 6, m.x - 25, 4).fill(p.metal);
+      g.ellipse(14, 12, 5, 4).fill(0x35452f).stroke({ color: p.metal, width: 1 });
+      for (let i = 0; i < 3; i++) g.rect(17 + i * 3, 5, 1, 2).fill(p.light);
+    } else if (type === 'PLASMA_RIFLE') {
+      g.roundRect(15, 5, 11, 6, 1).fill(p.light).stroke({ color: INK, width: 1 });
+      g.rect(25, 6, m.x - 25, 4).fill(p.metal);
+      g.rect(18, 7, 10, 1.3).fill(this.def.color);
     } else if (type === 'SHOTGUN') {
       g.roundRect(15, 5, 10, 7, 1).fill(p.armor).stroke({ color: INK, width: 1 });
       g.rect(23, 6, m.x - 23, 4).fill(p.metal);
@@ -192,6 +228,14 @@ export class OperativeGraphic extends Container {
       } else if (this.def.id === 'VECTOR') {
         const r = 24 + ((this.age * 22) % 18);
         e.arc(0, 0, r, -0.65, 0.65).stroke({ color, alpha: 0.35, width: 1 });
+      } else if (this.def.id === 'SUTURA') {
+        e.circle(0, 0, 24).stroke({ color, width: 1, alpha: 0.35 });
+        e.rect(-3, -24, 6, 12).rect(-6, -21, 12, 6).fill({ color, alpha: 0.65 });
+      } else if (this.def.id === 'VOLT') {
+        const r = Math.min(c.def.ability.pulseRadius ?? 170, 20 + (c.def.ability.duration - c.activeRemaining) * 220);
+        e.circle(0, 0, r).stroke({ color, width: 1.6, alpha: Math.max(0.05, 0.6 - (r / 170) * 0.5) });
+      } else if (this.def.id === 'MORSA') {
+        e.poly([-20, -20, 20, -20, 24, -12, 24, 12, 20, 20, -20, 20]).stroke({ color, width: 2, alpha: 0.6 });
       } else {
         e.moveTo(-22, -10).lineTo(-12, -10).moveTo(-22, 10).lineTo(-12, 10).stroke({ color, width: 1.2, alpha: 0.6 });
       }

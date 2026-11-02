@@ -6,8 +6,8 @@ import { CHARACTERS, DEFAULT_CHARACTER_ID, findCharacter, getCharacter } from '.
 const MODIFIER_KEYS = ['moveSpeedMult', 'visionRangeMult', 'visionAngleBonus', 'noiseDampingMult', 'movementNoiseMult', 'damageMult', 'fireRateMult', 'bulletBounces', 'shieldRegenRate'];
 const MULTIPLIERS = ['moveSpeedMult', 'noiseDampingMult', 'damageMult', 'fireRateMult'] as const;
 
-test('there are three operatives with unique ids, names and colors', () => {
-  assert.equal(CHARACTERS.length, 3);
+test('there are six operatives with unique ids, names and colors', () => {
+  assert.equal(CHARACTERS.length, 6);
   for (const key of ['id', 'name', 'color'] as const) assert.equal(new Set(CHARACTERS.map((c) => c[key])).size, CHARACTERS.length, key);
 });
 
@@ -36,7 +36,7 @@ test('operatives trade protection for mobility and have different starting weapo
     assert.ok(c.moveSpeed >= 0.8 && c.moveSpeed <= 1.2);
     assert.ok(c.ability.duration > 0 && c.ability.cooldown > c.ability.duration);
   }
-  assert.equal(new Set(CHARACTERS.map((c) => c.weapon)).size, 3);
+  assert.equal(new Set(CHARACTERS.map((c) => c.weapon)).size, 6);
   assert.ok(getCharacter('BRASA').shield > getCharacter('NIX').shield);
   assert.ok(getCharacter('BRASA').moveSpeed < getCharacter('NIX').moveSpeed);
 });

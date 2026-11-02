@@ -80,8 +80,8 @@ export const VISION = {
   range: 420,
   proximity: 65,
 } as const;
-/** Share of the map still visible in explored areas outside the light (unexplored stays black). */
-export const FOG_MEMORY_ALPHA = 0.05;
+/** Ambient terrain brightness outside the cone, including areas not explored yet. */
+export const FOG_MEMORY_ALPHA = 0.38;
 
 /** Dungeon sizes are in tiles. */
 export const DUNGEON = {

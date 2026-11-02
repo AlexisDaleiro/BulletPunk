@@ -55,8 +55,7 @@ export function spawnDebris(world: World, renderer: RenderSystem, x: number, y: 
 }
 
 /**
- * Red "!" over a bot that just spotted the player. It sits above the fog on purpose: being
- * spotted from outside your cone is information the player should get.
+ * A short alert mark, hidden with its enemy when it is outside the forward view.
  */
 export function spawnAlertMark(world: World, renderer: RenderSystem, x: number, y: number): void {
   const mark = world.create();
@@ -64,8 +63,9 @@ export function spawnAlertMark(world: World, renderer: RenderSystem, x: number, 
   node.blendMode = 'add';
   world
     .add(mark, 'transform', createTransform(x, y))
+    .add(mark, 'fogged', {})
     .add(mark, 'lifetime', { age: 0, duration: 0.8, startAlpha: 1 });
-  renderer.attach(world, mark, 'ripples', node);
+  renderer.attach(world, mark, 'entities', node);
 }
 
 /** Short text that rises and fades: "+25", "+AMMO". Shown over the fog on purpose, it is feedback for the player. */
