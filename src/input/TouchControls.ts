@@ -1,4 +1,5 @@
-import { AIM_DEADZONE, STICK_RADIUS } from '../config';
+import { STICK_RADIUS } from '../config';
+import { SwipeAim } from './SwipeAim';
 import './touch.css';
 
 /** One-shot button presses. Shared with InputManager, which latches keyboard presses into it too. */
@@ -68,21 +69,20 @@ class Stick {
 }
 
 /**
- * DOM overlay for touch play: floating move stick (left half), floating aim stick (right half),
+ * DOM overlay for touch play: floating move stick (left half), swipe to rotate (right half),
  * and Dash / Reload / Interact / Skill buttons. Hidden unless input is in touch mode.
  */
 export class TouchControls {
   readonly move = new Stick('stick-base');
-  readonly aim = new Stick('stick-base aim');
+  readonly aim = new SwipeAim();
   private readonly root = div('touch-ui');
   private readonly edges: ActionEdges;
-  private release: { x: number; y: number } | null = null;
   private readonly abilityButton: HTMLButtonElement;
 
   constructor(host: HTMLElement, edges: ActionEdges) {
     this.edges = edges;
     this.root.style.setProperty('--stick-r', `${STICK_RADIUS}px`);
-    this.root.append(this.move.base, this.aim.base);
+    this.root.append(this.move.base);
     this.addButton('SWAP', 'swap', 'swap');
     this.addButton('RELOAD', 'reload', 'reload');
     this.addButton('HACK', 'interact', 'interact');
@@ -91,27 +91,29 @@ export class TouchControls {
     this.abilityButton.setAttribute('aria-label', 'Activar habilidad');
 
     this.root.addEventListener('pointerdown', (e) => {
-      const stick = e.clientX < this.root.clientWidth / 2 ? this.move : this.aim;
-      if (stick.pointerId !== null) return;
+      const left = e.clientX - this.root.getBoundingClientRect().left < this.root.clientWidth / 2;
+      const control = left ? this.move : this.aim;
+      if (control.pointerId !== null) return;
       e.preventDefault();
       this.root.setPointerCapture(e.pointerId);
-      stick.begin(e.pointerId, e.clientX, e.clientY);
+      if (left) this.move.begin(e.pointerId, e.clientX, e.clientY);
+      else this.aim.begin(e.pointerId, e.clientX);
     });
     this.root.addEventListener('pointermove', (e) => {
-      for (const stick of [this.move, this.aim]) {
-        if (stick.pointerId === e.pointerId) stick.move(e.clientX, e.clientY);
-      }
+      if (this.move.pointerId === e.pointerId) this.move.move(e.clientX, e.clientY);
+      if (this.aim.pointerId === e.pointerId) this.aim.move(e.clientX, this.root.clientWidth);
     });
     const lift = (e: PointerEvent): void => {
       if (this.move.pointerId === e.pointerId) this.move.end();
       if (this.aim.pointerId === e.pointerId) {
-        // Releasing a deliberate aim fires one shot along the last aim direction.
-        if (this.aim.magnitude >= AIM_DEADZONE) this.release = { x: this.aim.x, y: this.aim.y };
+        if (e.type === 'pointerup') this.aim.move(e.clientX, this.root.clientWidth);
+        else this.aim.reset();
         this.aim.end();
       }
     };
     this.root.addEventListener('pointerup', lift);
     this.root.addEventListener('pointercancel', lift);
+    this.root.addEventListener('lostpointercapture', lift);
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
 
     host.appendChild(this.root);
@@ -130,16 +132,8 @@ export class TouchControls {
   /** Releases every held control, e.g. when switching input mode. */
   reset(): void {
     this.move.end();
-    this.aim.end();
-    this.release = null;
+    this.aim.reset();
     this.root.querySelectorAll('.touch-btn.on').forEach((button) => button.classList.remove('on'));
-  }
-
-  /** The aim vector from a just-released aim stick, once; null if there was none. */
-  takeRelease(): { x: number; y: number } | null {
-    const r = this.release;
-    this.release = null;
-    return r;
   }
 
   private addButton(label: string, className: string, edge: keyof ActionEdges): HTMLButtonElement {

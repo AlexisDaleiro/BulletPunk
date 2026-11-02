@@ -1,10 +1,11 @@
 import { Graphics } from 'pixi.js';
 import { traceAim } from '../combat/aimTrace';
+import { hasMobileTarget, mobileAttackCone, type AttackCone } from '../combat/mobileAim';
 import { BULLET_RANGE } from '../config';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
 import type { TileMap } from '../world/TileMap';
-import { segmentCircle } from '../world/raycast';
+import { raycastTiles, segmentCircle } from '../world/raycast';
 import type { RenderSystem } from './RenderSystem';
 
 /** Collision-aware laser. Only already-visible enemies may change the target indicator. */
@@ -19,9 +20,14 @@ export class AimGuideSystem implements System {
     this.guide.clear();
     const map = this.map;
     if (!map) return;
-    world.each(['playerControlled', 'transform', 'weaponInventory', 'vision', 'health'], (_e, _tag, t, inv, vision, health) => {
+    world.each(['playerControlled', 'transform', 'weaponInventory', 'vision', 'health'], (entity, _tag, t, inv, vision, health) => {
       if (health.hp <= 0) return;
       const weapon = inv.slots[inv.activeSlot];
+      if (world.get(entity, 'intent')?.autoFire) {
+        const cone = mobileAttackCone(world, entity, weapon);
+        if (cone) this.drawCone(map, cone, hasMobileTarget(world, map, entity, cone), inv.reloadTimer > 0);
+        return;
+      }
       const trace = traceAim(map, t.x, t.y, t.angle, weapon.type, Math.min(weapon.range ?? BULLET_RANGE, vision.effectiveRange ?? vision.range));
       let hit = 1, target = false;
       world.each(['team', 'transform', 'health', 'collider', 'renderable'], (_enemy, team, enemy, h, col, r) => {
@@ -37,5 +43,27 @@ export class AimGuideSystem implements System {
       this.guide.circle(ex, ey, 1.1).fill(color);
       if (target) this.guide.moveTo(ex - 8, ey).lineTo(ex - 5, ey).moveTo(ex + 5, ey).lineTo(ex + 8, ey).stroke({ color, width: 1, alpha: 0.8 });
     });
+  }
+
+  private drawCone(map: TileMap, cone: AttackCone, target: boolean, reloading: boolean): void {
+    const solid = (tx: number, ty: number) => map.isSolid(tx, ty);
+    if (raycastTiles(solid, cone.x, cone.y, cone.sx, cone.sy)) return;
+    const points = [cone.sx, cone.sy];
+    const steps = Math.max(12, Math.ceil(cone.spread / 0.015));
+    for (let i = 0; i <= steps; i++) {
+      const angle = cone.angle - cone.spread / 2 + cone.spread * i / steps;
+      const dx = Math.cos(angle), dy = Math.sin(angle);
+      // Clip to the same body-centered vision radius used by target detection.
+      const ox = cone.sx - cone.x, oy = cone.sy - cone.y;
+      const projection = ox * dx + oy * dy;
+      const sightRange = -projection + Math.sqrt(Math.max(0, projection * projection + cone.visionRange ** 2 - ox * ox - oy * oy));
+      const range = Math.min(cone.range, sightRange);
+      const ex = cone.sx + dx * range, ey = cone.sy + dy * range;
+      const hit = raycastTiles(solid, cone.sx, cone.sy, ex, ey);
+      points.push(cone.sx + dx * range * (hit?.t ?? 1), cone.sy + dy * range * (hit?.t ?? 1));
+    }
+    const color = reloading ? 0xd5bc80 : target ? 0xff6b69 : 0xff0055;
+    this.guide.poly(points).fill({ color, alpha: target ? 0.16 : 0.08 });
+    this.guide.poly(points).stroke({ color, width: 1, alpha: 0.55 });
   }
 }

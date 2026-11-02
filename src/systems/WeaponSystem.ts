@@ -1,6 +1,7 @@
 import type { SoundManager } from '../audio/SoundManager';
 import { abilityModifiers, endAbility } from '../characters/abilities';
 import { weaponMuzzle } from '../characters/weaponPose';
+import { hasMobileTarget, mobileAttackCone } from '../combat/mobileAim';
 import { COLORS, MUZZLE_OFFSET, NOISE_PROFILE_MULT } from '../config';
 import type { Team, TransformComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
@@ -61,12 +62,14 @@ export class WeaponSystem implements System {
         this.startReload(world, entity, t, w, inv);
         return;
       }
-      if (!intent.wantsFire || inv.fireCooldown > 0) return;
+      const cone = intent.autoFire && world.has(entity, 'playerControlled') ? mobileAttackCone(world, entity, w) : null;
+      const wantsFire = cone ? !!this.map && hasMobileTarget(world, this.map, entity, cone) : intent.wantsFire;
+      if (!wantsFire || inv.fireCooldown > 0) return;
       if (inv.magazine[slot] <= 0) {
         if (inv.reserve[slot] > 0) this.startReload(world, entity, t, w, inv);
         return;
       }
-      this.fire(world, entity, t, w, inv, team.team);
+      this.fire(world, entity, t, w, inv, team.team, cone?.spread ?? w.spreadAngle);
     });
   }
 
@@ -78,7 +81,7 @@ export class WeaponSystem implements System {
     this.audio.playReload(t);
   }
 
-  private fire(world: World, entity: Entity, t: TransformComponent, w: WeaponDefinition, inv: WeaponInventoryComponent, team: Team): void {
+  private fire(world: World, entity: Entity, t: TransformComponent, w: WeaponDefinition, inv: WeaponInventoryComponent, team: Team, spread: number): void {
     const stats = world.get(entity, 'passiveSynergy')?.stats;
     const character = world.get(entity, 'character');
     const enemy = world.get(entity, 'enemyVisual');
@@ -116,7 +119,7 @@ export class WeaponSystem implements System {
       this.pool.spawn({
         x: mx,
         y: my,
-        angle: t.angle + (Math.random() - 0.5) * w.spreadAngle,
+        angle: t.angle + (Math.random() - 0.5) * spread,
         speed: w.projectileSpeed,
         team,
         damage,

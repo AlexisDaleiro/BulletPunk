@@ -183,10 +183,8 @@ export const SNEAK_INPUT = 0.6;
 /** Move scale applied while the sneak key is held. Must stay below SNEAK_INPUT. */
 export const KEY_SNEAK_SCALE = 0.45;
 export const MOVE_DEADZONE = 0.12;
-/** Aim stick magnitude that counts as a deliberate aim. */
-export const AIM_DEADZONE = 0.25;
-/** Aim stick magnitude at which the weapon auto-fires. */
-export const AIM_FIRE_THRESHOLD = 0.8;
+/** A horizontal swipe across half the screen turns the mobile player 180 degrees. */
+export const TOUCH_TURN_RADIANS = Math.PI * 2;
 /** Touch joystick travel, CSS px. */
 export const STICK_RADIUS = 56;
 

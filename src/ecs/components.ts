@@ -194,6 +194,8 @@ export interface IntentComponent {
   moveY: number;
   aimAngle: number;
   wantsFire: boolean;
+  /** Mobile: fire only while a visible hostile is inside the weapon cone. */
+  autoFire: boolean;
   wantsReload: boolean;
   wantsDash: boolean;
   wantsInteract: boolean;
@@ -277,6 +279,7 @@ export function createIntent(aimAngle = 0): IntentComponent {
     moveY: 0,
     aimAngle,
     wantsFire: false,
+    autoFire: false,
     wantsReload: false,
     wantsDash: false,
     wantsInteract: false,

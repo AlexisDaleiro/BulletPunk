@@ -27,11 +27,10 @@ export class InputSystem implements System {
           const p = this.renderer.screenToWorld(s.pointerX, s.pointerY);
           intent.aimAngle = Math.atan2(p.y - t.y, p.x - t.x);
         }
-      } else if (s.aimActive) {
-        intent.aimAngle = Math.atan2(s.aimY, s.aimX);
-      } else if (s.moveX !== 0 || s.moveY !== 0) {
-        intent.aimAngle = Math.atan2(s.moveY, s.moveX); // no aim: face where you run
+      } else {
+        intent.aimAngle = Math.atan2(Math.sin(intent.aimAngle + s.aimTurn), Math.cos(intent.aimAngle + s.aimTurn));
       }
+      intent.autoFire = s.mode === 'touch';
       intent.wantsFire = s.fire;
       intent.wantsReload = s.reload;
       intent.wantsDash = s.dash;

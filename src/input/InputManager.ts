@@ -1,4 +1,4 @@
-import { AIM_DEADZONE, AIM_FIRE_THRESHOLD, KEY_SNEAK_SCALE, MOVE_DEADZONE } from '../config';
+import { KEY_SNEAK_SCALE, MOVE_DEADZONE } from '../config';
 import { TouchControls, type ActionEdges } from './TouchControls';
 
 export type InputMode = 'desktop' | 'touch';
@@ -14,10 +14,8 @@ export interface InputState {
   hasPointer: boolean;
   pointerX: number;
   pointerY: number;
-  /** Touch: aim stick direction (length 0..1). `aimActive` is false when no deliberate aim is held. */
-  aimActive: boolean;
-  aimX: number;
-  aimY: number;
+  /** Touch: accumulated horizontal swipe rotation since the last simulation step. */
+  aimTurn: number;
   fire: boolean;
   /** One-shot actions: true for exactly one poll per press. */
   dash: boolean;
@@ -58,9 +56,7 @@ export class InputManager {
     hasPointer: false,
     pointerX: 0,
     pointerY: 0,
-    aimActive: false,
-    aimX: 0,
-    aimY: 0,
+    aimTurn: 0,
     fire: false,
     dash: false,
     reload: false,
@@ -77,7 +73,8 @@ export class InputManager {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.releaseAll);
-    window.addEventListener('pointerdown', this.onPointerDown);
+    // Switch modes before the touch overlay receives the first finger, so resetting cannot drop it.
+    window.addEventListener('pointerdown', this.onPointerDown, true);
     window.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -124,9 +121,7 @@ export class InputManager {
     s.hasPointer = this.hasPointer;
     s.pointerX = this.pointerX;
     s.pointerY = this.pointerY;
-    s.aimActive = false;
-    s.aimX = 0;
-    s.aimY = 0;
+    s.aimTurn = 0;
     s.fire = this.mouseDown || this.firePressed;
     this.firePressed = false;
   }
@@ -140,13 +135,8 @@ export class InputManager {
     s.moveY = move.y * k;
     s.hasPointer = false;
 
-    const released = this.touch.takeRelease();
-    const held = aim.pointerId !== null && aim.magnitude >= AIM_DEADZONE;
-    s.aimActive = held || released !== null;
-    const src = released ?? aim;
-    s.aimX = s.aimActive ? src.x : 0;
-    s.aimY = s.aimActive ? src.y : 0;
-    s.fire = (held && aim.magnitude >= AIM_FIRE_THRESHOLD) || released !== null;
+    s.aimTurn = aim.takeTurn();
+    s.fire = false; // Target detection in WeaponSystem decides when to fire on mobile.
   }
 
   private axis(...codes: string[]): number {

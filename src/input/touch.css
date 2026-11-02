@@ -21,12 +21,6 @@
   pointer-events: none;
 }
 
-.stick-base.aim {
-  border-color: rgba(255, 0, 85, 0.55);
-  background: rgba(255, 0, 85, 0.06);
-  box-shadow: 0 0 16px rgba(255, 0, 85, 0.25);
-}
-
 .stick-base.on {
   opacity: 1;
 }
@@ -42,11 +36,6 @@
   border-radius: 50%;
   border: 2px solid #00e5ff;
   background: rgba(0, 229, 255, 0.3);
-}
-
-.stick-base.aim .stick-knob {
-  border-color: #ff0055;
-  background: rgba(255, 0, 85, 0.3);
 }
 
 /* Buttons form a 2x2 thumb cluster in the bottom-right corner; size follows screen height. */
