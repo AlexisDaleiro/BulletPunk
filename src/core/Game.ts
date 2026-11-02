@@ -12,6 +12,8 @@ export class Game {
   readonly world = new World();
   readonly app = new Application();
   private readonly systems: System[] = [];
+  /** While true, frames are skipped entirely (e.g. a touch device held in portrait). */
+  paused = false;
   private accumulator = 0;
 
   /** Systems run in registration order: this is the pipeline order. */
@@ -52,6 +54,7 @@ export class Game {
   }
 
   private frame(rawDt: number): void {
+    if (this.paused) return;
     const frameDt = Math.min(rawDt, MAX_FRAME_DT);
     this.accumulator += frameDt;
     while (this.accumulator >= FIXED_DT) {

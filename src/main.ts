@@ -4,6 +4,7 @@ import { GameState } from './game/GameState';
 import { LevelManager } from './game/LevelManager';
 import { ProjectilePool } from './entities/projectiles';
 import { InputManager } from './input/InputManager';
+import { initLandscape } from './input/landscape';
 import { NoiseField } from './noise/NoiseField';
 import { AISystem } from './systems/AISystem';
 import { AudioSystem } from './systems/AudioSystem';
@@ -89,6 +90,7 @@ game
   .addSystem(hud)
   .addSystem(render);
 await game.start(host);
+initLandscape((portrait) => (game.paused = portrait));
 levels.start();
 
 // Handles for poking at the running game from the devtools console.

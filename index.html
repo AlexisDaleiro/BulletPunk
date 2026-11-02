@@ -28,10 +28,40 @@
       #app canvas {
         display: block;
       }
+      /* Touch devices held upright: ask for landscape (the game pauses behind this). */
+      #rotate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #05060a;
+        color: #00e5ff;
+        font: 700 16px monospace;
+        letter-spacing: 0.1em;
+        text-align: center;
+      }
+      #rotate span {
+        font-size: 64px;
+        animation: tilt 1.8s ease-in-out infinite;
+      }
+      @keyframes tilt {
+        0%, 25% { transform: rotate(0); }
+        65%, 100% { transform: rotate(-90deg); }
+      }
+      @media (pointer: coarse) and (orientation: portrait) {
+        #rotate {
+          display: flex;
+        }
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="rotate"><span>&#128241;</span>ROTATE YOUR DEVICE<br />TO PLAY</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
