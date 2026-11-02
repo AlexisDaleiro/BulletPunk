@@ -29,7 +29,8 @@ export class CharacterSystem implements System {
     world.each(['character', 'renderable', 'health', 'transform', 'weaponInventory'], (_entity, c, r, h, t, inv) => {
       if (!(r.node instanceof OperativeGraphic)) return;
       r.node.setWeapon(inv.slots[inv.activeSlot].type);
-      r.node.animate(dt, Math.hypot(t.vx, t.vy), c, h);
+      const weapon = inv.slots[inv.activeSlot];
+      r.node.animate(dt, Math.hypot(t.vx, t.vy), c, h, inv.reloadTimer > 0 ? 1 - inv.reloadTimer / weapon.reloadTime : 0);
     });
   }
 }

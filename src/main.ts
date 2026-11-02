@@ -14,6 +14,7 @@ import { AudioSystem } from './systems/AudioSystem';
 import { DashTrailSystem } from './systems/DashTrailSystem';
 import { EnvironmentSystem } from './systems/EnvironmentSystem';
 import { CharacterSystem } from './systems/CharacterSystem';
+import { PresentationSystem } from './systems/PresentationSystem';
 import { FogSystem } from './systems/FogSystem';
 import { HealthSystem } from './systems/HealthSystem';
 import { HudSystem } from './systems/HudSystem';
@@ -57,6 +58,7 @@ const fog = new FogSystem(render);
 const hud = new HudSystem(render, state, fog);
 hud.onAbilityStatus = (text, ready, active) => input.setAbilityStatus(text, ready, active);
 const health = new HealthSystem(render, audio);
+const pickups = new PickupSystem(state, audio, render);
 health.onKill = () => {
   state.kills++;
 };
@@ -70,7 +72,7 @@ const levels = new LevelManager({
   audio,
   fog,
   vision,
-  mapUsers: [physics, ai, weapons, projectileHits],
+  mapUsers: [physics, ai, weapons, projectileHits, pickups],
   levelUsers: [interact, projectileHits, hud, environment],
 });
 interact.onDescend = () => levels.requestDescend();
@@ -93,9 +95,10 @@ game
   .addSystem(new NoisePropagationSystem(noise))
   .addSystem(interact)
   .addSystem(environment)
-  .addSystem(new PickupSystem(state, audio, render))
+  .addSystem(pickups)
   .addSystem(health)
   .addSystem(new DashTrailSystem(render))
+  .addSystem(new PresentationSystem(render))
   .addSystem(new LifetimeSystem())
   .addSystem(vision)
   .addSystem(fog)

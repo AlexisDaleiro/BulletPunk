@@ -1,4 +1,4 @@
-import { Graphics, Text } from 'pixi.js';
+import { Graphics, GraphicsContext, Text } from 'pixi.js';
 import { COLORS } from '../config';
 import { createTransform } from '../ecs/components';
 import type { World } from '../ecs/World';
@@ -15,7 +15,9 @@ export function spawnFlash(
   life: number,
 ): void {
   const flash = world.create();
-  const node = new Graphics().circle(0, 0, radius).fill(color);
+  const node = new Graphics().circle(0, 0, radius).fill({ color, alpha: 0.12 })
+    .circle(0, 0, radius * 0.55).fill({ color, alpha: 0.35 })
+    .circle(0, 0, radius * 0.18).fill(0xffeed1);
   node.blendMode = 'add';
   node.alpha = 0.9;
   world
@@ -23,6 +25,33 @@ export function spawnFlash(
     .add(flash, 'lifetime', { age: 0, duration: life, startAlpha: 0.9 })
     .add(flash, 'fogged', {});
   renderer.attach(world, flash, 'entities', node);
+}
+
+const particleShapes = new Map<string, GraphicsContext>();
+/** Bounded debris geometry: casings settle and impact sparks dissipate quickly. */
+export function spawnDebris(world: World, renderer: RenderSystem, x: number, y: number, color: number, count = 4, casing = false): void {
+  const budget = Math.min(count, 160 - world.store('particle').size);
+  const key = `${color}:${casing}`;
+  let shape = particleShapes.get(key);
+  if (!shape) {
+    shape = casing ? new GraphicsContext().roundRect(-1.8, -0.8, 3.6, 1.6, 0.4).fill(color)
+      : new GraphicsContext().poly([-3, 0, 0, -1, 4, 0, 0, 1]).fill(color);
+    particleShapes.set(key, shape);
+  }
+  for (let i = 0; i < budget; i++) {
+    const particle = world.create();
+    const angle = Math.random() * Math.PI * 2;
+    const speed = casing ? 35 + Math.random() * 40 : 40 + Math.random() * 120;
+    const t = createTransform(x, y, angle);
+    t.vx = Math.cos(angle) * speed;
+    t.vy = Math.sin(angle) * speed;
+    world.add(particle, 'transform', t).add(particle, 'fogged', {})
+      .add(particle, 'particle', { drag: casing ? 6 : 3, spin: casing ? 8 : 2 })
+      .add(particle, 'lifetime', { age: 0, duration: casing ? 1.8 : 0.25 + Math.random() * 0.25, startAlpha: casing ? 0.8 : 1 });
+    const node = new Graphics(shape);
+    if (!casing) node.blendMode = 'add';
+    renderer.attach(world, particle, casing ? 'shadows' : 'entities', node);
+  }
 }
 
 /**

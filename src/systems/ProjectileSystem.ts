@@ -4,7 +4,7 @@ import { COLORS, TILE_SIZE } from '../config';
 import type { Team } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
-import { spawnFlash } from '../entities/effects';
+import { spawnDebris, spawnFlash } from '../entities/effects';
 import type { ProjectilePool } from '../entities/projectiles';
 import type { Level } from '../game/Level';
 import { raycastTiles, segmentCircle } from '../world/raycast';
@@ -109,6 +109,7 @@ export class ProjectileSystem implements System {
 
   private impact(world: World, x: number, y: number, team: Team): void {
     spawnFlash(world, this.renderer, x, y, team === 'PLAYER' ? COLORS.cyan : COLORS.red, 9, 0.18);
+    spawnDebris(world, this.renderer, x, y, 0xffd9a4, 3);
     this.audio.playBulletImpact({ x, y });
   }
 }

@@ -49,6 +49,6 @@ export function createPlayer(world: World, render: RenderSystem, x: number, y: n
     .add(player, 'team', { team: 'PLAYER' })
     .add(player, 'collider', { halfSize: PLAYER_COLLIDER_HALF })
     .add(player, 'playerControlled', {});
-  render.attach(world, player, 'entities', new OperativeGraphic(def, WEAPONS[def.weapon].type));
+  render.attach(world, player, 'entities', new OperativeGraphic(def, WEAPONS[def.weapon].type, render.renderer));
   return player;
 }

@@ -1,5 +1,7 @@
-import { createWeaponInventory, type WeaponId } from '../combat/weapons';
-import { COLORS, DIFFICULTY, ENEMY, PLAYER_COLLIDER_HALF, ROOM_ENEMIES, TILE_SIZE } from '../config';
+import { createWeaponInventory, WEAPONS, type WeaponId } from '../combat/weapons';
+import { DIFFICULTY, ENEMY, PLAYER_COLLIDER_HALF, ROOM_ENEMIES, TILE_SIZE } from '../config';
+import { enemyAppearance } from '../characters/enemyAppearances';
+import { HostileGraphic } from '../characters/HostileGraphic';
 import { createRng, type Rng } from '../core/rng';
 import {
   createAIController,
@@ -16,7 +18,6 @@ import type { Room } from '../types';
 import type { Dungeon } from '../world/DungeonGenerator';
 import type { Point } from '../world/pathfinding';
 import type { TileMap } from '../world/TileMap';
-import { createOperativeGraphic } from './player';
 
 /** Bots keep clear of the spawn room by this many tiles so the player is not shot on arrival. */
 const SAFE_TILES = 6;
@@ -32,6 +33,7 @@ export function createEnemy(
   floor = 1,
 ): Entity {
   const enemy = world.create();
+  const appearance = enemyAppearance(WEAPONS[weapon].type);
   // Softer damage and fire rate come from the same passives mechanism the player's implants use.
   // Deeper floors harden both, and give bots more HP.
   const passives = createPassiveSynergy();
@@ -40,6 +42,7 @@ export function createEnemy(
 
   world
     .add(enemy, 'transform', createTransform(x, y, Math.random() * Math.PI * 2))
+    .add(enemy, 'enemyVisual', { appearance, recoil: 0 })
     .add(enemy, 'intent', createIntent())
     .add(enemy, 'locomotion', { ...createLocomotion(), runSpeed: ENEMY.runSpeed, turnRate: ENEMY.turnRate })
     .add(enemy, 'health', createHealth(Math.round(ENEMY.hp * (1 + DIFFICULTY.hpPerFloor * (floor - 1))), 0))
@@ -51,7 +54,7 @@ export function createEnemy(
     .add(enemy, 'team', { team: 'ENEMY' })
     .add(enemy, 'fogged', {})
     .add(enemy, 'aiController', createAIController(roomId, waypoints));
-  renderer.attach(world, enemy, 'entities', createOperativeGraphic(COLORS.red));
+  renderer.attach(world, enemy, 'entities', new HostileGraphic(appearance, WEAPONS[weapon].type, renderer.renderer));
   return enemy;
 }
 

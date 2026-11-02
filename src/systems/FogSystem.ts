@@ -5,6 +5,7 @@ import type { World } from '../ecs/World';
 import { pointInPolygon } from '../vision/visibility';
 import type { TileMap } from '../world/TileMap';
 import type { RenderSystem } from './RenderSystem';
+import { VisionConeGraphic } from '../render/VisionConeGraphic';
 
 const T = TILE_SIZE;
 
@@ -22,6 +23,7 @@ export class FogSystem implements System {
   private readonly dark = new Graphics();
   private readonly mask = new Graphics();
   private readonly beam = new Graphics();
+  private readonly cone = new VisionConeGraphic();
   private map: TileMap | null = null;
   private cover: (Sprite | undefined)[] = [];
   private explored = new Uint8Array(0);
@@ -39,6 +41,7 @@ export class FogSystem implements System {
     this.fog.addChild(this.shroud, this.dark);
     this.fog.setMask({ mask: this.mask, inverse: true });
     this.renderer.layers.vision.addChild(this.fog, this.mask, this.beam);
+    this.renderer.layers.vision.addChild(this.cone);
   }
 
   /** Has the player seen this tile? */
@@ -74,9 +77,12 @@ export class FogSystem implements System {
     world.each(['playerControlled', 'vision', 'transform'], (_entity, _tag, vision, t) => {
       this.polygon = vision.polygon;
       this.reveal(vision.polygon, t.x, t.y, vision.effectiveRange ?? vision.range);
+      const stats = world.get(_entity, 'passiveSynergy')?.stats;
+      this.cone.update(vision.polygon, t.x, t.y, t.angle, vision.fov + (stats?.visionAngleBonus ?? 0), vision.effectiveRange ?? vision.range);
     });
 
     const polygon = this.polygon as number[] | null;
+    if (!polygon) this.cone.visible = false;
     world.each(['fogged', 'renderable', 'transform'], (_entity, _tag, r, t) => {
       r.node.visible = polygon !== null && pointInPolygon(polygon, t.x, t.y);
     });
@@ -88,7 +94,7 @@ export class FogSystem implements System {
     this.beam.clear();
     if (!polygon || polygon.length < 6) return;
     this.mask.poly(polygon).fill(0xffffff);
-    this.beam.poly(polygon).fill({ color: 0x7fe9ff, alpha: 0.06 });
+    this.beam.poly(polygon).fill({ color: 0xc4d8dc, alpha: 0.025 });
   }
 
   /** Marks tiles whose center is lit as explored, along with their 8 neighbours (the walls around them). */

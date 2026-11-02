@@ -2,6 +2,7 @@ import { Graphics } from 'pixi.js';
 import type { System } from '../ecs/System';
 import type { NoiseField } from '../noise/NoiseField';
 import type { RenderSystem } from './RenderSystem';
+import type { World } from '../ecs/World';
 
 /**
  * Draws every live noise ripple as expanding rings, fading with intensity. They sit above the fog
@@ -22,11 +23,12 @@ export class RippleRenderSystem implements System {
     this.renderer.layers.ripples.addChild(this.rings);
   }
 
-  render(): void {
+  render(_world: World): void {
     this.rings.clear();
     for (const e of this.field.events) {
-      this.rings.circle(e.x, e.y, e.currentRadius).stroke({ width: 2.5, color: e.color, alpha: e.intensity });
-      this.rings.circle(e.x, e.y, e.currentRadius * 0.6).stroke({ width: 1.5, color: e.color, alpha: e.intensity * 0.5 });
+      const own = e.sourceEntityId === String(this.renderer.cameraTarget);
+      const color = e.color === '#ff0055' ? 0xe49a8c : e.color === '#00e5ff' ? 0x8bb7c3 : 0xd7c49a;
+      this.rings.circle(e.x, e.y, e.currentRadius).stroke({ width: 1, color, alpha: e.intensity * (own ? 0.18 : 0.42) });
     }
   }
 }

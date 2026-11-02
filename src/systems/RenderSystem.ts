@@ -52,6 +52,8 @@ export class RenderSystem implements System {
     this.app.stage.addChild(this.post, this.hud);
   }
 
+  get renderer() { return this.app.renderer; }
+
   /** The FPS / entity counter in the corner. */
   set showStats(visible: boolean) {
     this.stats.visible = visible;

@@ -3,7 +3,9 @@ import { WEAPONS, type WeaponId } from '../combat/weapons';
 import { COLORS } from '../config';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
-import { spawnFlash } from '../entities/effects';
+import { createTransform } from '../ecs/components';
+import { OperativeGraphic } from '../characters/OperativeGraphic';
+import { spawnDebris, spawnFlash } from '../entities/effects';
 import { createPickup } from '../entities/pickups';
 import type { RenderSystem } from './RenderSystem';
 
@@ -61,6 +63,22 @@ export class HealthSystem implements System {
     const t = world.get(entity, 'transform');
     if (t) {
       spawnFlash(world, this.renderer, t.x, t.y, COLORS.red, 22, 0.35);
+      spawnDebris(world, this.renderer, t.x, t.y, 0xf5c3a3, 6);
+      const visual = world.get(entity, 'enemyVisual');
+      const weapon = world.get(entity, 'weaponInventory')?.slots[0];
+      if (visual && weapon) {
+        const fallen = world.create();
+        const pose = createTransform(t.x, t.y, t.angle + 0.35);
+        pose.vx = -Math.cos(t.angle) * 24;
+        pose.vy = -Math.sin(t.angle) * 24;
+        world.add(fallen, 'transform', pose).add(fallen, 'fogged', {})
+          .add(fallen, 'particle', { drag: 5, spin: 0.15 })
+          .add(fallen, 'lifetime', { age: 0, duration: 3, startAlpha: 0.65 });
+        const node = new OperativeGraphic(visual.appearance, weapon.type, this.renderer.renderer);
+        node.scale.set(1, 0.75);
+        node.tint = 0x7c8080;
+        this.renderer.attach(world, fallen, 'shadows', node);
+      }
       this.audio.playBulletImpact(t);
       this.dropLoot(world, t.x, t.y);
     }

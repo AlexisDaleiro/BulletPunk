@@ -1,5 +1,6 @@
-import { Container, Graphics } from 'pixi.js';
-import type { CharacterDef } from './characters';
+import { Container, Graphics, Sprite, type Renderer } from 'pixi.js';
+import type { OperativeAppearance } from './enemyAppearances';
+import { cachedArt } from '../render/artCache';
 import { weaponMuzzle } from './weaponPose';
 import type { WeaponType } from '../types';
 import type { CharacterComponent, HealthComponent } from '../ecs/components';
@@ -13,17 +14,23 @@ export class OperativeGraphic extends Container {
   private readonly gun = new Graphics();
   private readonly effect = new Graphics();
   private readonly lights = new Graphics();
+  private readonly muzzleLight = new Graphics();
+  private readonly torso = new Container();
+  private readonly weaponRig = new Container();
+  private readonly renderer?: Renderer;
+  private damageOverlay?: Sprite;
   private weaponType: WeaponType | null = null;
   private stride = 0;
   private age = 0;
-  private readonly def: CharacterDef;
+  private readonly def: OperativeAppearance;
 
-  constructor(def: CharacterDef, weapon: WeaponType) {
+  constructor(def: OperativeAppearance, weapon: WeaponType, renderer?: Renderer) {
     super();
     this.def = def;
+    this.renderer = renderer;
     const p = def.palette;
-    const heavy = def.id === 'BRASA';
-    const scout = def.id === 'VECTOR';
+    const heavy = def.id === 'BRASA' || def.silhouette === 'HEAVY';
+    const scout = def.id === 'VECTOR' || def.silhouette === 'SCOUT';
     const shoulder = heavy ? 13 : scout ? 11 : 9;
     const shadow = new Graphics().ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.38 });
     this.addChild(shadow, this.effect, this.rig);
@@ -41,7 +48,7 @@ export class OperativeGraphic extends Container {
     } else if (!heavy) {
       coat.poly([-8, -10, -15, -8, -13, 8, -7, 10]).fill(p.cloth).stroke({ color: INK, width: 1.5 });
     }
-    this.rig.addChild(coat);
+    this.torso.addChild(coat);
 
     const pack = new Graphics().roundRect(-13, -7, 8, 14, 2).fill(INK).stroke({ color: p.metal, width: 1 });
     pack.roundRect(-12, -5, 4, 10, 1).fill(p.armor);
@@ -49,7 +56,7 @@ export class OperativeGraphic extends Container {
       pack.roundRect(-16, -6, 5, 12, 2).fill(p.metal).stroke({ color: INK, width: 1 });
       pack.rect(-15, -3, 2, 6).fill(def.color);
     }
-    this.rig.addChild(pack);
+    this.torso.addChild(pack);
 
     const body = new Graphics();
     body.roundRect(-10, -10, 17, 20, 4).fill(p.cloth).stroke({ width: 1.5, color: INK });
@@ -86,9 +93,32 @@ export class OperativeGraphic extends Container {
       body.circle(11, -9, 2).fill(def.color);
       body.moveTo(-8, -9).lineTo(-13, -17).stroke({ color: p.metal, width: 1 });
     }
+    if (def.hostile) {
+      // A respirator, armor chevrons and a red ID plate make the faction distinct.
+      body.roundRect(9, -5, 6, 9, 2).fill(0x1a2024).stroke({ color: p.metal, width: 0.7 });
+      body.rect(13, -4, 1.7, 6).fill(def.color);
+      body.moveTo(-3, -12).lineTo(0, -10).lineTo(3, -12).stroke({ color: def.color, width: 1.6 });
+      body.roundRect(-8, 5, 5, 4, 0.5).fill(0x351c20);
+      body.rect(-7, 6, 3, 1).fill(0xff8271);
+      if (heavy) {
+        for (let i = 0; i < 3; i++) body.roundRect(-8 + i * 3, 11, 2, 5, 0.5).fill(0xc6a077).stroke({ color: INK, width: 0.6 });
+      } else if (scout) {
+        body.poly([-8, -11, -14, -14, -18, -6, -8, -4]).fill(p.armor).stroke({ color: INK, width: 1 });
+      }
+    }
     // Small abrasion marks rather than a full neon outline.
     body.moveTo(-2, -11).lineTo(1, -10).moveTo(-6, 4).lineTo(-4, 3).stroke({ color: p.light, width: 0.6, alpha: 0.7 });
-    this.rig.addChild(body, this.gun, this.lights);
+    this.torso.addChild(body);
+    const paintedBody = renderer ? cachedArt(`operative:${def.id}`, this.torso, renderer) : this.torso;
+    this.rig.addChild(paintedBody);
+    if (paintedBody instanceof Sprite) {
+      this.damageOverlay = new Sprite(paintedBody.texture);
+      this.damageOverlay.position.copyFrom(paintedBody.position);
+      this.damageOverlay.blendMode = 'add';
+      this.damageOverlay.alpha = 0;
+      this.rig.addChild(this.damageOverlay);
+    }
+    this.rig.addChild(this.weaponRig, this.lights, this.muzzleLight);
     this.lights.roundRect(-4, -shoulder - 1, 4, 1.6, 0.5).fill(def.color);
     this.lights.roundRect(-4, shoulder, 3, 1.6, 0.5).fill(def.color);
     this.setWeapon(weapon);
@@ -119,17 +149,40 @@ export class OperativeGraphic extends Container {
       g.rect(16, 7, 3, 1).fill(this.def.color);
     }
     g.rect(m.x - 1, 6.5, 1.2, 3).fill(INK);
+    for (const child of this.weaponRig.removeChildren()) if (child !== g) child.destroy();
+    if (this.renderer) {
+      // Keep the reusable drawing object; cachedArt owns and destroys its temporary container.
+      const art = new Container();
+      art.addChild(new Graphics(g.context.clone()));
+      this.weaponRig.addChild(cachedArt(`weapon:${this.def.id}:${type}`, art, this.renderer));
+    } else this.weaponRig.addChild(g);
+    this.muzzleLight.clear().poly([m.x - 2, m.y - 2, m.x + 9, m.y, m.x - 2, m.y + 2]).fill(0xffe7b0);
+    this.muzzleLight.blendMode = 'add';
+    this.muzzleLight.visible = false;
   }
 
-  animate(dt: number, speed: number, c: CharacterComponent, h: HealthComponent): void {
+  animateMotion(dt: number, speed: number, recoil: number, h: HealthComponent, reloadProgress = 0): void {
     this.age += dt;
     this.stride += dt * Math.min(speed, 330) * 0.065;
     const moving = Math.min(1, speed / 100);
-    this.feet.forEach((f, i) => { f.x = Math.sin(this.stride + i * Math.PI) * 2.2 * moving; });
-    this.rig.y = Math.sin(this.stride * 2) * 0.45 * moving;
-    this.rig.rotation = Math.sin(this.stride) * 0.018 * moving;
-    this.gun.x = -c.recoil * 2.5;
-    this.rig.tint = (h.hitFlash ?? 0) > 0 ? 0xffc4b4 : 0xffffff;
+    this.feet.forEach((f, i) => {
+      f.x = Math.sin(this.stride + i * Math.PI) * 3.4 * moving;
+      f.rotation = Math.sin(this.stride + i * Math.PI) * 0.12 * moving;
+    });
+    this.rig.y = Math.sin(this.stride * 2) * 0.65 * moving;
+    this.rig.x = -recoil * 0.8 + Math.sin(this.age * 2.3) * 0.22 * (1 - moving);
+    this.rig.rotation = Math.sin(this.stride) * 0.028 * moving;
+    this.rig.scale.set(1 + Math.sin(this.age * 2.3) * 0.008);
+    this.weaponRig.x = -recoil * 3;
+    this.weaponRig.rotation = reloadProgress > 0 ? -0.25 * Math.sin(reloadProgress * Math.PI) : recoil * -0.04;
+    this.muzzleLight.visible = recoil > 0.65;
+    this.muzzleLight.alpha = recoil;
+    this.rig.tint = (h.hitFlash ?? 0) > 0 ? 0xffdfc6 : 0xffffff;
+    if (this.damageOverlay) this.damageOverlay.alpha = Math.min(0.65, (h.hitFlash ?? 0) * 4);
+  }
+
+  animate(dt: number, speed: number, c: CharacterComponent, h: HealthComponent, reloadProgress = 0): void {
+    this.animateMotion(dt, speed, c.recoil, h, reloadProgress);
     this.lights.alpha = c.activeRemaining > 0 ? 0.7 + Math.sin(this.age * 10) * 0.3 : 0.8;
     const e = this.effect.clear();
     const color = this.def.color;
@@ -144,5 +197,11 @@ export class OperativeGraphic extends Container {
       }
     }
     if (c.activationFlash > 0) e.circle(0, 0, 18 + (0.5 - c.activationFlash) * 24).stroke({ color, width: 1.5, alpha: c.activationFlash });
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]): void {
+    // The construction-only gun is not a child when its cached sprite is used.
+    if (this.renderer) this.gun.destroy();
+    super.destroy(typeof options === 'object' ? { ...options, context: true } : { children: !!options, context: true });
   }
 }

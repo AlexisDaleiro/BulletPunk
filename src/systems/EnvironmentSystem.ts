@@ -4,7 +4,7 @@ import { COLORS, DESTRUCTIBLE, HAZARDS, TILE_SIZE } from '../config';
 import type { HazardComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
-import { spawnFlash } from '../entities/effects';
+import { spawnDebris, spawnFlash } from '../entities/effects';
 import { createPickup } from '../entities/pickups';
 import type { Level } from '../game/Level';
 import type { GameState } from '../game/GameState';
@@ -99,6 +99,7 @@ export class EnvironmentSystem implements System {
       this.audio.playExplosion({ x, y });
       spawnFlash(world, this.renderer, x, y, 0xff8a2a, 74, 0.45);
       spawnFlash(world, this.renderer, x, y, COLORS.amber, 38, 0.3);
+      spawnDebris(world, this.renderer, x, y, 0xffbb68, 12);
       this.field.emit('SHOOT', x, y, 0, 1.4);
       world.each(['health', 'transform'], (_e, h, t) => {
         const d = Math.hypot(t.x - x, t.y - y);
@@ -108,6 +109,7 @@ export class EnvironmentSystem implements System {
     }
     this.audio.playCrateBreak({ x, y });
     spawnFlash(world, this.renderer, x, y, 0xb9a678, 20, 0.25);
+    spawnDebris(world, this.renderer, x, y, 0xd9c092, 7);
     const roll = (Math.imul(level.dungeon.seed ^ (tx * 73856093), 19349663) ^ (ty * 83492791)) >>> 0;
     if (tile === 'CRATE' && roll % 100 < CRATE_LOOT * 100) {
       createPickup(world, this.renderer, x, y, { kind: 'CREDITS', id: null, amount: 5 + 2 * level.dungeon.floor });
@@ -129,6 +131,7 @@ export class EnvironmentSystem implements System {
         h.hit.length = 0;
         this.audio.playShock(at);
         spawnFlash(world, this.renderer, at.x, at.y, 0xfff2a0, 26, 0.18);
+        spawnDebris(world, this.renderer, at.x, at.y, 0xb5e6ff, 5);
       } else if (!zapping) {
         h.active = false;
       }

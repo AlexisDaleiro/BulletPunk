@@ -8,7 +8,7 @@ import { Container, Graphics } from 'pixi.js';
 export function operativePreview(renderer: Renderer, def: CharacterDef): HTMLCanvasElement {
   const stage = new Container();
   stage.addChild(new Graphics().rect(0, 0, 180, 160).fill({ color: 0x000000, alpha: 0 }));
-  const graphic = new OperativeGraphic(def, WEAPONS[def.weapon].type);
+  const graphic = new OperativeGraphic(def, WEAPONS[def.weapon].type, renderer);
   graphic.position.set(90, 95);
   graphic.rotation = -Math.PI / 2 + 0.25;
   graphic.scale.set(2.2);

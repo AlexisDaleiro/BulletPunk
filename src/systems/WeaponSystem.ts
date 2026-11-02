@@ -5,7 +5,7 @@ import { COLORS, MUZZLE_OFFSET, NOISE_PROFILE_MULT } from '../config';
 import type { Team, TransformComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
-import { spawnFlash } from '../entities/effects';
+import { spawnDebris, spawnFlash } from '../entities/effects';
 import type { ProjectilePool } from '../entities/projectiles';
 import type { NoiseField } from '../noise/NoiseField';
 import type { WeaponDefinition } from '../types';
@@ -81,8 +81,9 @@ export class WeaponSystem implements System {
   private fire(world: World, entity: Entity, t: TransformComponent, w: WeaponDefinition, inv: WeaponInventoryComponent, team: Team): void {
     const stats = world.get(entity, 'passiveSynergy')?.stats;
     const character = world.get(entity, 'character');
+    const enemy = world.get(entity, 'enemyVisual');
     const color = team === 'PLAYER' ? character?.def.color ?? COLORS.cyan : COLORS.red;
-    const muzzle = character ? weaponMuzzle(w.type) : { x: MUZZLE_OFFSET, y: 0 };
+    const muzzle = character || enemy ? weaponMuzzle(w.type) : { x: MUZZLE_OFFSET, y: 0 };
     const mx = t.x + Math.cos(t.angle) * muzzle.x - Math.sin(t.angle) * muzzle.y;
     const my = t.y + Math.sin(t.angle) * muzzle.x + Math.cos(t.angle) * muzzle.y;
     if (character) {
@@ -92,6 +93,7 @@ export class WeaponSystem implements System {
     }
 
     inv.magazine[inv.activeSlot]--;
+    if (enemy) enemy.recoil = 1;
     inv.fireCooldown = 1 / (w.fireRate * (stats?.fireRateMult ?? 1));
 
     const mult = NOISE_PROFILE_MULT[w.noiseProfile] * (w.noiseScale ?? 1);
@@ -106,6 +108,7 @@ export class WeaponSystem implements System {
       return;
     }
     spawnFlash(world, this.renderer, mx, my, color, 7, 0.08);
+    spawnDebris(world, this.renderer, t.x - Math.sin(t.angle) * 13, t.y + Math.cos(t.angle) * 13, 0xc8a675, 1, true);
 
     const damage = w.damagePerPellet * (stats?.damageMult ?? 1);
     const bounces = (w.specialAttributes?.ricochetCount ?? 0) + (stats?.bulletBounces ?? 0);

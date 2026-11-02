@@ -1,5 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { CharacterDef } from '../characters/characters.ts';
+import type { EnemyAppearance } from '../characters/enemyAppearances.ts';
 // `.ts` extension: Node's test runner needs it for runtime imports (type imports are erased).
 import { LOCOMOTION, NOISE_PROFILES, PLAYER_VITALS, VISION } from '../config.ts';
 import type { CyberwarePassive, WeaponDefinition } from '../types';
@@ -237,6 +238,9 @@ export interface LifetimeComponent {
 }
 
 export interface ComponentMap {
+  enemyVisual: { appearance: EnemyAppearance; recoil: number };
+  pickupVisual: { age: number; phase: number };
+  particle: { drag: number; spin: number };
   character: CharacterComponent;
   transform: TransformComponent;
   health: HealthComponent;

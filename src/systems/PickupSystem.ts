@@ -10,12 +10,15 @@ import type { GameState } from '../game/GameState';
 import { addImplant, IMPLANTS, isImplantId } from '../shop/implants';
 import type { KeyColor } from '../types';
 import type { RenderSystem } from './RenderSystem';
+import type { TileMap } from '../world/TileMap';
+import { lineOfSight } from '../world/raycast';
 
 const PICKUP_RADIUS = 24;
 const KEY_COLORS: readonly string[] = ['red', 'blue', 'gold'];
 
 /** Walking over loot collects it: weapons, ammo, keycards, credits and free implants. */
 export class PickupSystem implements System {
+  map: TileMap | null = null;
   private readonly state: GameState;
   private readonly audio: SoundManager;
   private readonly renderer: RenderSystem;
@@ -29,7 +32,9 @@ export class PickupSystem implements System {
   update(world: World): void {
     world.each(['playerControlled', 'transform', 'weaponInventory', 'passiveSynergy', 'health'], (_entity, _tag, t, inv, syn, health) => {
       world.each(['pickup', 'transform'], (loot, pickup, pt) => {
+        if ((world.get(loot, 'pickupVisual')?.age ?? 1) < 0.3) return;
         if (Math.hypot(pt.x - t.x, pt.y - t.y) > PICKUP_RADIUS) return;
+        if (this.map && !lineOfSight(this.map, t.x, t.y, pt.x, pt.y)) return;
         if (!this.collect(pickup, inv, syn, health)) return;
         const [text, color] = describe(pickup);
         spawnPopup(world, this.renderer, t.x, t.y, text, color);
