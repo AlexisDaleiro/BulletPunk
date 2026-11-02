@@ -28,6 +28,7 @@ import { RenderSystem } from './systems/RenderSystem';
 import { RippleRenderSystem } from './systems/RippleRenderSystem';
 import { VisionRaycastSystem } from './systems/VisionRaycastSystem';
 import { WeaponSystem } from './systems/WeaponSystem';
+import { UI } from './ui/UI';
 
 const host = document.getElementById('app');
 if (!host) throw new Error('#app host element missing');
@@ -124,9 +125,24 @@ window.addEventListener('pagehide', () => run.endRun());
 const seedParam = Number(new URLSearchParams(location.search).get('seed'));
 const urlSeed = Number.isInteger(seedParam) && seedParam > 0 ? seedParam : undefined;
 
-// TEMP until the menus land: start straight away, and a death starts a new run.
+let pendingSeed = urlSeed;
+const ui = new UI({
+  run,
+  settings,
+  profile,
+  renderer: game.app.renderer,
+  bootAntialias: settings.value.antialias,
+  takeSeed: () => {
+    const seed = pendingSeed;
+    pendingSeed = undefined;
+    return seed;
+  },
+});
+game.app.canvas.style.visibility = 'hidden';
+ui.open('title');
+
+// TEMP until the pause and game-over screens land: a death starts a new run.
 run.onGameOver = () => run.startRun(run.character.id);
-run.startRun(profile.value.lastCharacter, urlSeed);
 
 // Handles for poking at the running game from the devtools console.
-if (import.meta.env.DEV) Object.assign(window, { game, noise, state, levels, projectiles, audio, run, profile, settings, render });
+if (import.meta.env.DEV) Object.assign(window, { game, noise, state, levels, projectiles, audio, run, profile, settings, render, ui });

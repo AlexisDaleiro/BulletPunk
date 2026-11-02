@@ -48,7 +48,8 @@ export class SoundManager {
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', (e) => {
       unlock();
-      if (e.code === 'KeyM' && !e.repeat) this.toggleMute();
+      // Typing an "m" into the profile name must not mute the game.
+      if (e.code === 'KeyM' && !e.repeat && !(e.target instanceof HTMLInputElement)) this.toggleMute();
     });
   }
 
