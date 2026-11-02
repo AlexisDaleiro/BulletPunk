@@ -41,6 +41,8 @@ export class InputManager {
   private readonly touch: TouchControls;
   private readonly keys = new Set<string>();
   private readonly edges: ActionEdges = { dash: false, reload: false, interact: false, swap: false };
+  /** False while a menu is up: every event is ignored so clicking a button cannot fire the weapon. */
+  private active = true;
   private mouseDown = false;
   private pointerX = 0;
   private pointerY = 0;
@@ -75,6 +77,17 @@ export class InputManager {
     window.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  /** Off while a menu is open (also drops held keys and hides the touch buttons); on to play. */
+  setActive(active: boolean): void {
+    this.active = active;
+    if (active) {
+      this.applyMode();
+    } else {
+      this.releaseAll();
+      this.touch.setVisible(false);
+    }
   }
 
   /** Samples input. Call once per fixed step: one-shot actions are cleared by the call. */
@@ -140,13 +153,16 @@ export class InputManager {
     this.releaseAll();
   }
 
-  private readonly releaseAll = (): void => {
+  /** Lets go of every key, button, stick and latched one-shot, so nothing stays stuck after a pause. */
+  readonly releaseAll = (): void => {
     this.keys.clear();
     this.mouseDown = false;
+    this.edges.dash = this.edges.reload = this.edges.interact = this.edges.swap = false;
     this.touch.reset();
   };
 
   private readonly onKeyDown = (e: KeyboardEvent): void => {
+    if (!this.active) return;
     this.setMode('desktop');
     if (BLOCKED_KEYS.includes(e.code)) e.preventDefault();
     if (e.repeat) return;
@@ -162,6 +178,7 @@ export class InputManager {
   };
 
   private readonly onPointerDown = (e: PointerEvent): void => {
+    if (!this.active) return;
     if (e.pointerType === 'touch') {
       this.setMode('touch');
       return;
@@ -172,7 +189,7 @@ export class InputManager {
   };
 
   private readonly onPointerMove = (e: PointerEvent): void => {
-    if (e.pointerType === 'touch') return;
+    if (!this.active || e.pointerType === 'touch') return;
     this.setMode('desktop');
     this.trackPointer(e);
   };

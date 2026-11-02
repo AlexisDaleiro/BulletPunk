@@ -42,6 +42,7 @@ export class RenderSystem implements System {
       this.layers.ripples,
     );
     this.stats.position.set(8, 8);
+    this.stats.visible = false;
     world.store('renderable').onRemove = (_, r) => r.node.destroy({ children: true });
   }
 
@@ -49,6 +50,11 @@ export class RenderSystem implements System {
     this.post.addChild(this.scene);
     this.hud.addChild(this.stats);
     this.app.stage.addChild(this.post, this.hud);
+  }
+
+  /** The FPS / entity counter in the corner. */
+  set showStats(visible: boolean) {
+    this.stats.visible = visible;
   }
 
   resize(width: number, height: number): void {

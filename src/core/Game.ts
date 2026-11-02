@@ -2,6 +2,7 @@ import { Application } from 'pixi.js';
 import { COLORS, FIXED_DT, MAX_FRAME_DT, MAX_PIXEL_RATIO } from '../config';
 import type { System } from '../ecs/System';
 import { World } from '../ecs/World';
+import { PauseReasons, type PauseReason } from './pause';
 
 /**
  * Owns the Pixi app, the world and the system pipeline.
@@ -11,10 +12,28 @@ import { World } from '../ecs/World';
 export class Game {
   readonly world = new World();
   readonly app = new Application();
+  /** Cap on devicePixelRatio for the canvas; change it with `setPixelRatio`. */
+  maxPixelRatio: number = MAX_PIXEL_RATIO;
   private readonly systems: System[] = [];
-  /** While true, frames are skipped entirely (e.g. a touch device held in portrait). */
-  paused = false;
+  private readonly pauseReasons = new PauseReasons();
+  private host: HTMLElement | null = null;
   private accumulator = 0;
+  /** Set on resume so the first frame after a pause (whose delta spans the pause) is dropped. */
+  private discardFrame = false;
+
+  /** While any reason holds (a menu, a phone held upright, a hidden tab), frames are skipped entirely. */
+  get paused(): boolean {
+    return this.pauseReasons.paused;
+  }
+
+  setPause(reason: PauseReason, on: boolean): void {
+    if (on) {
+      this.pauseReasons.add(reason);
+    } else if (this.pauseReasons.delete(reason)) {
+      this.accumulator = 0;
+      this.discardFrame = true;
+    }
+  }
 
   /** Systems run in registration order: this is the pipeline order. */
   addSystem(system: System): this {
@@ -22,13 +41,14 @@ export class Game {
     return this;
   }
 
-  async start(host: HTMLElement): Promise<void> {
+  async start(host: HTMLElement, antialias = true): Promise<void> {
+    this.host = host;
     await this.app.init({
       width: Math.max(1, host.clientWidth),
       height: Math.max(1, host.clientHeight),
-      resolution: pixelRatio(),
+      resolution: this.pixelRatio(),
       autoDensity: true,
-      antialias: true,
+      antialias,
       background: COLORS.background,
       preference: 'webgl',
       powerPreference: 'high-performance',
@@ -37,24 +57,38 @@ export class Game {
 
     for (const system of this.systems) system.init?.();
 
-    const resize = (width: number, height: number): void => {
-      const w = Math.max(1, width);
-      const h = Math.max(1, height);
-      // Resolution is re-read so dragging the window to another monitor re-sharpens the canvas.
-      this.app.renderer.resize(w, h, pixelRatio());
-      for (const system of this.systems) system.resize?.(w, h);
-    };
-    resize(host.clientWidth, host.clientHeight);
+    this.resize(host.clientWidth, host.clientHeight);
     new ResizeObserver((entries) => {
       const rect = entries[0]?.contentRect;
-      if (rect) resize(rect.width, rect.height);
+      if (rect) this.resize(rect.width, rect.height);
     }).observe(host);
 
     this.app.ticker.add((ticker) => this.frame(ticker.deltaMS / 1000));
   }
 
+  setPixelRatio(ratio: number): void {
+    this.maxPixelRatio = ratio;
+    if (this.host) this.resize(this.host.clientWidth, this.host.clientHeight);
+  }
+
+  private resize(width: number, height: number): void {
+    const w = Math.max(1, width);
+    const h = Math.max(1, height);
+    // Resolution is re-read so dragging the window to another monitor re-sharpens the canvas.
+    this.app.renderer.resize(w, h, this.pixelRatio());
+    for (const system of this.systems) system.resize?.(w, h);
+  }
+
+  private pixelRatio(): number {
+    return Math.min(window.devicePixelRatio || 1, this.maxPixelRatio);
+  }
+
   private frame(rawDt: number): void {
     if (this.paused) return;
+    if (this.discardFrame) {
+      this.discardFrame = false;
+      return;
+    }
     const frameDt = Math.min(rawDt, MAX_FRAME_DT);
     this.accumulator += frameDt;
     while (this.accumulator >= FIXED_DT) {
@@ -65,8 +99,4 @@ export class Game {
     const alpha = this.accumulator / FIXED_DT;
     for (const system of this.systems) system.render?.(this.world, alpha, frameDt);
   }
-}
-
-function pixelRatio(): number {
-  return Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
 }

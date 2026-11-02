@@ -38,6 +38,9 @@ export class SoundManager {
   private master: GainNode | null = null;
   private noise: AudioBuffer | null = null;
   private muted = false;
+  private volume = 0.5;
+  /** Called when the M key flips mute. */
+  onMuteChange: ((muted: boolean) => void) | null = null;
   private readonly listener: SoundPos = { x: 0, y: 0 };
 
   constructor() {
@@ -54,9 +57,25 @@ export class SoundManager {
     this.listener.y = y;
   }
 
+  /** Master volume, 0..1. */
+  setVolume(volume: number): void {
+    this.volume = volume;
+    this.applyGain();
+  }
+
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+    this.applyGain();
+  }
+
+  /** The M key. Reports the change so the saved setting follows it. */
   toggleMute(): void {
-    this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
+    this.setMuted(!this.muted);
+    this.onMuteChange?.(this.muted);
+  }
+
+  private applyGain(): void {
+    if (this.master) this.master.gain.value = this.muted ? 0 : this.volume;
   }
 
   // --- the sound set ---------------------------------------------------------------------
@@ -142,7 +161,7 @@ export class SoundManager {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.muted ? 0 : 0.5;
+      this.master.gain.value = this.muted ? 0 : this.volume;
       const limiter = this.ctx.createDynamicsCompressor();
       this.master.connect(limiter);
       limiter.connect(this.ctx.destination);

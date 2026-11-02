@@ -11,6 +11,19 @@ export class GameState {
   touch = false;
   toastText = '';
   toastTimer = 0;
+  /** Bots killed this run. */
+  kills = 0;
+
+  /** Back to a fresh run. `touch` stays: it follows the device, not the run. */
+  reset(): void {
+    this.floor = 1;
+    this.credits = 0;
+    this.kills = 0;
+    this.resetKeys();
+    this.prompt = null;
+    this.toastText = '';
+    this.toastTimer = 0;
+  }
 
   toast(text: string, seconds = 2.4): void {
     this.toastText = text;

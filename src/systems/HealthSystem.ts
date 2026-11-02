@@ -14,6 +14,8 @@ const AMMO_DROP_CHANCE = 0.2;
 
 /** Ticks i-frames and shield regen, and handles deaths: bots drop loot and vanish, the player goes down. */
 export class HealthSystem implements System {
+  /** Called once per bot killed. */
+  onKill: (() => void) | null = null;
   private readonly renderer: RenderSystem;
   private readonly audio: SoundManager;
 
@@ -61,6 +63,7 @@ export class HealthSystem implements System {
       this.dropLoot(world, t.x, t.y);
     }
     world.destroy(entity);
+    this.onKill?.();
   }
 
   /** Every bot drops a few credits; sometimes a weapon or a magazine as well. */

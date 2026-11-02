@@ -1,4 +1,5 @@
 import type { SoundManager } from '../audio/SoundManager';
+import { CHARACTERS, type CharacterDef } from '../characters/characters';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
 import { createPlayer } from '../entities/player';
@@ -28,7 +29,6 @@ export interface LevelDeps {
   mapUsers: { map: TileMap | null }[];
   /** Systems that also need the Level itself (to change tiles or draw the minimap). */
   levelUsers: { level: Level | null }[];
-  baseSeed: number;
 }
 
 /** Floor N's seed is the run seed plus (N - 1) of these, so every floor of a run is reproducible. */
@@ -44,6 +44,8 @@ const DESCEND_HEAL = 30;
 export class LevelManager implements System {
   player: Entity | null = null;
   level: Level | null = null;
+  character: CharacterDef = CHARACTERS[0];
+  private baseSeed = 0;
   private pending: number | null = null;
   private readonly deps: LevelDeps;
   private readonly view: TilemapView;
@@ -53,8 +55,28 @@ export class LevelManager implements System {
     this.view = new TilemapView(deps.renderer.layers.floor);
   }
 
-  start(): void {
+  /** Begins a run as `character`. Call `reset()` first when a run was already going. */
+  start(character: CharacterDef, baseSeed: number): void {
+    this.character = character;
+    this.baseSeed = baseSeed;
     this.load(1);
+  }
+
+  /** Tears the run down: every entity (the player too), floor state and run state. Nothing carries over. */
+  reset(): void {
+    const { world, renderer, state, noise, pool, vision, mapUsers, levelUsers } = this.deps;
+    this.pending = null;
+    for (const entity of world.entities()) world.destroy(entity);
+    world.flush();
+    this.player = null;
+    this.level = null;
+    renderer.cameraTarget = null;
+    pool.reset();
+    noise.events.length = 0;
+    vision.segments = [];
+    for (const user of mapUsers) user.map = null;
+    for (const user of levelUsers) user.level = null;
+    state.reset();
   }
 
   requestDescend(): void {
@@ -69,7 +91,8 @@ export class LevelManager implements System {
   }
 
   private load(floor: number): void {
-    const { world, renderer, state, noise, pool, audio, fog, vision, mapUsers, levelUsers, baseSeed } = this.deps;
+    const { world, renderer, state, noise, pool, audio, fog, vision, mapUsers, levelUsers } = this.deps;
+    const baseSeed = this.baseSeed;
     state.floor = floor;
     state.resetKeys();
     state.prompt = null;
@@ -90,7 +113,7 @@ export class LevelManager implements System {
     fog.setMap(dungeon.map);
 
     if (this.player === null) {
-      this.player = createPlayer(world, renderer, dungeon.spawn.x, dungeon.spawn.y);
+      this.player = createPlayer(world, renderer, dungeon.spawn.x, dungeon.spawn.y, this.character);
       renderer.cameraTarget = this.player;
     } else {
       const t = world.get(this.player, 'transform');

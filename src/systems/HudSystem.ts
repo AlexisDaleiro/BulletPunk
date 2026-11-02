@@ -43,10 +43,8 @@ export class HudSystem implements System {
   private readonly weaponText = new Text({ text: '', style: mono(14, COLORS.cyan) });
   private readonly promptText = new Text({ text: '', style: mono(15, COLORS.amber) });
   private readonly toastText = new Text({ text: '', style: mono(16, COLORS.amber) });
-  private readonly deathText = new Text({
-    text: 'SIGNAL LOST\nPRESS ANY KEY OR TAP TO RESTART',
-    style: mono(26, COLORS.red),
-  });
+  /** Called once when the player's HP reaches zero; the UI shows the game-over screen. */
+  onDeath: (() => void) | null = null;
   private width = 1;
   private dead = false;
   private miniLevel: Level | null = null;
@@ -65,9 +63,19 @@ export class HudSystem implements System {
     this.weaponText.anchor.set(0.5, 1);
     this.promptText.anchor.set(0.5, 1);
     this.toastText.anchor.set(0.5, 0);
-    this.deathText.anchor.set(0.5);
-    this.deathText.visible = false;
-    this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText, this.deathText);
+    this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText);
+  }
+
+  /** Blanks the HUD for a new run: nothing from the last one (death flag, minimap cache, texts) survives. */
+  reset(): void {
+    this.dead = false;
+    this.miniLevel = null;
+    this.miniVersion = this.miniFogVersion = -1;
+    this.miniTimer = 0;
+    this.bars.clear();
+    this.mini.clear();
+    this.dot.clear();
+    this.info.text = this.weaponText.text = this.promptText.text = this.toastText.text = '';
   }
 
   resize(width: number, height: number): void {
@@ -76,7 +84,6 @@ export class HudSystem implements System {
     this.weaponText.position.set(width / 2, height - 14);
     this.promptText.position.set(width / 2, height - 100);
     this.toastText.position.set(width / 2, 64);
-    this.deathText.position.set(width / 2, height / 2);
   }
 
   render(world: World, _alpha: number, frameDt: number): void {
@@ -110,13 +117,7 @@ export class HudSystem implements System {
 
     if (health.hp <= 0 && !this.dead) {
       this.dead = true;
-      this.deathText.visible = true;
-      // Short delay so the key or tap that killed you does not instantly restart.
-      setTimeout(() => {
-        const restart = (): void => location.reload();
-        window.addEventListener('keydown', restart, { once: true });
-        window.addEventListener('pointerdown', restart, { once: true });
-      }, 700);
+      this.onDeath?.();
     }
   }
 
