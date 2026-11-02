@@ -28,7 +28,7 @@ const candidates: Candidate[] = [];
 export class ProjectileSystem implements System {
   /** Current floor's tiles. */
   map: TileMap | null = null;
-  /** Current floor; explosive rounds use it to blow open secret walls. */
+  /** Current floor; shots damage its destructible obstacles and explosive rounds crack secret walls. */
   level: Level | null = null;
   private readonly renderer: RenderSystem;
   private readonly pool: ProjectilePool;
@@ -79,14 +79,16 @@ export class ProjectileSystem implements System {
       const hx = t.prevX + (t.x - t.prevX) * wall.t;
       const hy = t.prevY + (t.y - t.prevY) * wall.t;
       this.impact(world, hx, hy, p.team);
-      if (p.explosive && this.level && (wall.nx !== 0 || wall.ny !== 0)) {
+      if (this.level && (wall.nx !== 0 || wall.ny !== 0)) {
         // The slug entered the tile on the far side of the hit face.
         const tx = Math.floor((hx - wall.nx * 2) / TILE_SIZE);
         const ty = Math.floor((hy - wall.ny * 2) / TILE_SIZE);
-        if (map.get(tx, ty) === 'SECRET_WALL') {
-          this.level.setTiles([{ x: tx, y: ty, tile: 'FLOOR' }]);
-          spawnFlash(world, this.renderer, hx, hy, COLORS.amber, 30, 0.4);
-          this.audio.playExplosion({ x: hx, y: hy });
+        const secret = p.explosive ? this.level.secretAt(tx, ty) : undefined;
+        if (secret) {
+          if (this.level.revealSecret(secret)) spawnFlash(world, this.renderer, hx, hy, COLORS.amber, 30, 0.4);
+        } else {
+          // Crates, barrels and weak walls take the hit; everything else just stops the shot.
+          this.level.hitTile(tx, ty, p.damage);
         }
       }
       if (p.bounces > 0 && (wall.nx !== 0 || wall.ny !== 0)) {

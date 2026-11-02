@@ -37,3 +37,36 @@ test('every implant has a tier and a price', () => {
     assert.ok(implant.cost > 0);
   }
 });
+
+// --- chest rewards ---------------------------------------------------------------------------------
+import { rollChest, rollSpecial, rollSupply, GEAR_WEAPONS, type LootContext } from '../rewards/rewards.ts';
+
+const fit: LootContext = { hp: 100, maxHp: 100, shield: 50, maxShield: 50, weapons: ['PLASMA_PISTOL'], usesAmmo: false, implants: [] };
+
+test('rewards: same seed and gear give the same loot; supplies adapt to need', () => {
+  assert.deepEqual(rollChest('SPECIAL', 'GEAR', 2, 99, 3, fit), rollChest('SPECIAL', 'GEAR', 2, 99, 3, fit));
+  assert.equal(rollSupply('AMMO', 1, 2, fit)[0].kind, 'CREDITS', 'no ammo weapon: ammo becomes credits');
+  assert.equal(rollSupply('AMMO', 1, 2, { ...fit, usesAmmo: true })[0].kind, 'AMMO');
+  assert.equal(rollSupply('MED', 1, 2, fit)[0].kind, 'CREDITS', 'full health: no repair kit');
+  const hurt = rollSupply('MED', 1, 2, { ...fit, hp: 30 })[0];
+  assert.equal(hurt.kind, 'HEAL');
+  assert.ok(hurt.amount > 0);
+});
+
+test('rewards: special cases never repeat gear the player already has', () => {
+  const every = Object.values(GEAR_WEAPONS).flat();
+  const ids = Object.keys(IMPLANTS);
+  for (let seed = 1; seed <= 200; seed++) {
+    for (const tier of [1, 2, 3] as const) {
+      const rewards = rollSpecial(tier, seed, 3, { ...fit, weapons: every.slice(0, 2), implants: ids.slice(0, 2) });
+      for (const r of rewards) {
+        if (r.kind === 'WEAPON') assert.ok(!every.slice(0, 2).includes(r.id as never), `owned ${r.id}`);
+        if (r.kind === 'IMPLANT') assert.ok(!ids.slice(0, 2).includes(r.id as string), `installed ${r.id}`);
+      }
+      assert.ok(rewards.some((r) => r.kind === 'WEAPON' || r.kind === 'IMPLANT' || r.kind === 'CREDITS'));
+    }
+  }
+  // With everything owned the case still pays out.
+  const all = rollSpecial(3, 5, 3, { ...fit, weapons: every, implants: ids });
+  assert.ok(all.length > 0 && all.every((r) => r.kind === 'CREDITS' || r.kind === 'AMMO'));
+});

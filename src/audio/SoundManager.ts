@@ -117,6 +117,53 @@ export class SoundManager {
     this.tone({ type: 'sine', from: 1760, dur: 0.2, gain: 0.22, delay: 0.12, at });
   }
 
+  /** Latch clack, then a rising chime that grows with the case's rarity (0 = supply cache). */
+  playChestOpen(at?: SoundPos, tier = 0): void {
+    this.burst({ dur: 0.05, gain: 0.3, filter: { type: 'highpass', freq: 2200 }, at });
+    this.tone({ type: 'triangle', from: 440, to: 660, dur: 0.14, gain: 0.2, delay: 0.06, at });
+    for (let i = 0; i < tier; i++) this.tone({ type: 'sine', from: 880 * (1 + i * 0.25), dur: 0.2, gain: 0.16, delay: 0.16 + i * 0.1, at });
+  }
+
+  /** A crate splintering. */
+  playCrateBreak(at?: SoundPos): void {
+    this.burst({ dur: 0.18, gain: 0.3, filter: { type: 'bandpass', freq: 900, q: 0.8 }, at });
+    this.tone({ type: 'square', from: 180, to: 70, dur: 0.12, gain: 0.14, at });
+  }
+
+  /** Electric snap of a shock plate. */
+  playShock(at?: SoundPos): void {
+    this.burst({ dur: 0.14, gain: 0.3, filter: { type: 'highpass', freq: 3500 }, at });
+    this.tone({ type: 'sawtooth', from: 1800, to: 120, dur: 0.16, gain: 0.18, at });
+  }
+
+  /** Warning beep while a shock plate charges. */
+  playCharge(at?: SoundPos): void {
+    this.tone({ type: 'square', from: 700, dur: 0.05, gain: 0.07, at });
+  }
+
+  /** Tripwire siren: two alternating tones. */
+  playAlarm(at?: SoundPos): void {
+    this.tone({ type: 'square', from: 520, dur: 0.22, gain: 0.16, at });
+    this.tone({ type: 'square', from: 780, dur: 0.22, gain: 0.16, delay: 0.24, at });
+  }
+
+  /** Air escaping behind a vent: the audible tell of a hidden room. */
+  playHiss(at?: SoundPos): void {
+    this.burst({ dur: 0.9, gain: 0.07, filter: { type: 'bandpass', freq: 3200, q: 0.6 }, at });
+  }
+
+  /** Faint electrical buzz leaking from behind a seam. */
+  playBuzz(at?: SoundPos): void {
+    this.tone({ type: 'sawtooth', from: 120, dur: 0.7, gain: 0.05, filter: { type: 'lowpass', freq: 400 }, at });
+  }
+
+  /** A hidden panel grinding aside. */
+  playSecret(at?: SoundPos): void {
+    this.tone({ type: 'sawtooth', from: 90, to: 140, dur: 0.5, gain: 0.2, filter: { type: 'lowpass', freq: 350 }, at });
+    this.tone({ type: 'sine', from: 660, to: 990, dur: 0.18, gain: 0.18, delay: 0.4, at });
+    this.tone({ type: 'sine', from: 990, to: 1320, dur: 0.22, gain: 0.16, delay: 0.55, at });
+  }
+
   playReload(at?: SoundPos): void {
     this.burst({ dur: 0.03, gain: 0.2, filter: { type: 'highpass', freq: 3500 }, at });
     this.burst({ dur: 0.04, gain: 0.25, filter: { type: 'highpass', freq: 2500 }, delay: 0.16, at });

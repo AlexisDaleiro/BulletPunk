@@ -133,16 +133,44 @@ export interface ProjectileComponent {
 
 /** Walk-over loot. */
 export interface PickupComponent {
-  kind: 'WEAPON' | 'AMMO' | 'KEY' | 'CREDITS' | 'IMPLANT';
+  kind: 'WEAPON' | 'AMMO' | 'KEY' | 'CREDITS' | 'IMPLANT' | 'HEAL';
   /** WEAPON: weapon id. KEY: key color. IMPLANT: implant id. Unused otherwise. */
   id: string | null;
   /** WEAPON / AMMO: spare magazines granted. CREDITS: credits granted. */
   amount: number;
 }
 
-/** Press-to-use props: chests, shop pedestals, medical stations, the access breaker. */
+/** A chest's lifecycle: closed, lid lifting (rewards still in the case), looted. */
+export interface ChestComponent {
+  family: 'SUPPLY' | 'SPECIAL';
+  category: 'AMMO' | 'MED' | 'CREDITS' | 'GEAR';
+  tier: 1 | 2 | 3;
+  seed: number;
+  state: 'CLOSED' | 'OPENING' | 'LOOTED';
+  /** Seconds since it started opening. */
+  t: number;
+}
+
+/** A floor hazard. Shock plates cycle warn -> zap; toxic puddles hurt while you stand in them; tripwires raise the alarm. */
+export interface HazardComponent {
+  kind: 'SHOCK' | 'TOXIC' | 'LASER';
+  /** World-px box. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Seconds into the current cycle (shock) or since the last alarm (laser). */
+  clock: number;
+  /** Shock plate mid-zap, or laser beam lit. */
+  active: boolean;
+  disabled: boolean;
+  /** Entities already zapped this cycle. */
+  hit: number[];
+}
+
+/** Press-to-use props: chests, shop pedestals, medical stations, terminals. */
 export interface InteractableComponent {
-  kind: 'CHEST' | 'SHOP_ITEM' | 'MEDIC' | 'BREAKER';
+  kind: 'CHEST' | 'SHOP_ITEM' | 'MEDIC' | 'TERMINAL';
   /** CHEST: tier 1-3. SHOP_ITEM: "WEAPON:<id>", "IMPLANT:<id>" or "AMMO". */
   payload: string;
   /** Credits. */
@@ -228,6 +256,8 @@ export interface ComponentMap {
   projectile: ProjectileComponent;
   pickup: PickupComponent;
   interactable: InteractableComponent;
+  chest: ChestComponent;
+  hazard: HazardComponent;
 }
 
 export function createTransform(x: number, y: number, angle = 0): TransformComponent {

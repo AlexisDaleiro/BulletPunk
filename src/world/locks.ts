@@ -77,10 +77,17 @@ export function floodRooms(
       stack.push(j);
     }
   }
+  // A room counts as reached when any tile of it can be stood on: layouts may put an obstacle at its center.
   const reached = new Set<string>();
   for (const r of rooms) {
-    const c = roomCenter(r);
-    if (seen[c.y * w + c.x]) reached.add(r.id);
+    for (let y = r.y; y < r.y + r.height && !reached.has(r.id); y++) {
+      for (let x = r.x; x < r.x + r.width; x++) {
+        if (seen[y * w + x]) {
+          reached.add(r.id);
+          break;
+        }
+      }
+    }
   }
   return reached;
 }

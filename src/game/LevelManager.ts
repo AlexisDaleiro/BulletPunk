@@ -129,9 +129,9 @@ export class LevelManager implements System {
 
     const bots = populateFloor(world, renderer, dungeon);
     const hasShop = dungeon.rooms.some((r) => r.type === 'SHOP');
-    console.info(`floor ${floor} (seed ${seed}): ${dungeon.rooms.length} rooms, ${bots} bots, ${dungeon.doors.length} locks`);
+    console.info(`floor ${floor} (seed ${seed}): ${dungeon.rooms.length} rooms, ${bots} bots, ${dungeon.doors.length} locks, ${dungeon.plan.chests.length} chests, ${dungeon.plan.secrets.length} secrets`);
     if (floor === 1) {
-      state.toast(state.touch ? 'STICKS MOVE AND AIM · SKILL ABILITY · HACK INTERACT' : 'WASD MOVE · F ABILITY · SPACE DASH · Q SWAP · E INTERACT', 5);
+      state.toast(state.touch ? 'STICKS MOVE AND AIM · SKILL ABILITY · HACK INTERACT · ODD WALLS CAN BE PUSHED' : 'WASD MOVE · F ABILITY · SPACE DASH · Q SWAP · E INTERACT · ODD WALLS CAN BE PUSHED', 5);
     } else {
       state.toast(`FLOOR ${floor}${hasShop ? ' · SHOP ON THIS LEVEL' : ''}`, 3.5);
     }

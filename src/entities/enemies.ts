@@ -1,5 +1,5 @@
 import { createWeaponInventory, type WeaponId } from '../combat/weapons';
-import { COLORS, ENEMY, PLAYER_COLLIDER_HALF, TILE_SIZE } from '../config';
+import { COLORS, DIFFICULTY, ENEMY, PLAYER_COLLIDER_HALF, ROOM_ENEMIES, TILE_SIZE } from '../config';
 import { createRng, type Rng } from '../core/rng';
 import {
   createAIController,
@@ -35,14 +35,14 @@ export function createEnemy(
   // Softer damage and fire rate come from the same passives mechanism the player's implants use.
   // Deeper floors harden both, and give bots more HP.
   const passives = createPassiveSynergy();
-  passives.stats.damageMult = Math.min(0.9, ENEMY.damageMult + 0.04 * (floor - 1));
+  passives.stats.damageMult = Math.min(0.9, ENEMY.damageMult + DIFFICULTY.damagePerFloor * (floor - 1));
   passives.stats.fireRateMult = ENEMY.fireRateMult;
 
   world
     .add(enemy, 'transform', createTransform(x, y, Math.random() * Math.PI * 2))
     .add(enemy, 'intent', createIntent())
     .add(enemy, 'locomotion', { ...createLocomotion(), runSpeed: ENEMY.runSpeed, turnRate: ENEMY.turnRate })
-    .add(enemy, 'health', createHealth(Math.round(ENEMY.hp * (1 + 0.1 * (floor - 1))), 0))
+    .add(enemy, 'health', createHealth(Math.round(ENEMY.hp * (1 + DIFFICULTY.hpPerFloor * (floor - 1))), 0))
     .add(enemy, 'noiseEmitter', createNoiseEmitter())
     .add(enemy, 'passiveSynergy', passives)
     .add(enemy, 'weaponInventory', createWeaponInventory([weapon]))
@@ -56,21 +56,26 @@ export function createEnemy(
 }
 
 /**
- * 1-3 bots in every combat room (one more from floor 3) and 3 guarding the exit. The spawn,
- * shop, chest and secret rooms stay empty. Deterministic per dungeon seed.
+ * Bots per room follow its function (security posts and the extraction zone are the busiest, medical
+ * bays and utility rooms the quietest), plus one more per room from floor 3. Spawn, shop, vault and
+ * secret rooms stay empty. Defensive posts planned by the layout are filled first. Deterministic per seed.
  */
 export function populateEnemies(world: World, renderer: RenderSystem, dungeon: Dungeon): number {
   const rng = createRng(dungeon.seed ^ 0x9e3779b9);
-  const extra = dungeon.floor >= 3 ? 1 : 0;
+  const extra = dungeon.floor >= DIFFICULTY.extraBotsFromFloor ? 1 : 0;
   let count = 0;
   for (const room of dungeon.rooms) {
     if (room.type !== 'COMBAT' && room.type !== 'EXIT') continue;
-    const n = room.type === 'EXIT' ? 3 + extra : rng.int(1, 3) + extra;
+    const [lo, hi] = ROOM_ENEMIES[room.kind];
+    const n = rng.int(lo, hi) + (hi > 0 ? extra : 0);
+    const posts = (dungeon.plan.posts[room.id] ?? []).map((p) => ({ x: (p.tx + 0.5) * TILE_SIZE, y: (p.ty + 0.5) * TILE_SIZE }));
     for (let i = 0; i < n; i++) {
-      const spot = randomFloor(dungeon.map, room, rng, dungeon.spawn);
-      const waypoints = [spot, randomFloor(dungeon.map, room, rng), randomFloor(dungeon.map, room, rng)];
+      const spot = posts[i] ?? randomFloor(dungeon.map, room, rng, dungeon.spawn);
+      const waypoints = posts[i] ? [spot, spot] : [spot, randomFloor(dungeon.map, room, rng), randomFloor(dungeon.map, room, rng)];
       const roll = rng.next();
-      const weapon: WeaponId = roll < 0.65 ? 'PLASMA_PISTOL' : roll < 0.9 ? 'AUTO_SMG' : 'NEON_SHOTGUN';
+      const smg = DIFFICULTY.smgChance(dungeon.floor);
+      const shotgun = DIFFICULTY.shotgunChance(dungeon.floor);
+      const weapon: WeaponId = roll < 1 - smg - shotgun ? 'PLASMA_PISTOL' : roll < 1 - shotgun ? 'AUTO_SMG' : 'NEON_SHOTGUN';
       createEnemy(world, renderer, spot.x, spot.y, room.id, waypoints, weapon, dungeon.floor);
       count++;
     }

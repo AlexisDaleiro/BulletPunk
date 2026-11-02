@@ -3,7 +3,7 @@ import { createRng } from '../core/rng';
 import type { World } from '../ecs/World';
 import { populateEnemies } from '../entities/enemies';
 import { createPickup } from '../entities/pickups';
-import { createBreaker, createChest, createMedic, createShopItem, createVendor, type ShopOffer } from '../entities/props';
+import { createChest, createHazard, createMedic, createShopItem, createTerminal, createVendor, type ShopOffer } from '../entities/props';
 import type { RenderSystem } from '../systems/RenderSystem';
 import { IMPLANTS } from '../shop/implants';
 import type { KeyColor, Room } from '../types';
@@ -17,11 +17,11 @@ const MEDIC_COST = 12;
 const tileCenter = (tx: number, ty: number): Point => ({ x: (tx + 0.5) * T, y: (ty + 0.5) * T });
 
 /**
- * Fills a freshly generated floor: bots, keycards, chests, the shop, the secret room's reward and
- * the Access Breaker node. Returns the number of bots. Deterministic per dungeon seed.
+ * Fills a freshly generated floor from its plan: bots, keycards, chests, terminals, hazards, medical
+ * stations and the shop. Returns the number of bots. Deterministic per dungeon seed.
  */
 export function populateFloor(world: World, renderer: RenderSystem, dungeon: Dungeon): number {
-  const { map, rooms, floor } = dungeon;
+  const { map, rooms } = dungeon;
   const rng = createRng(dungeon.seed ^ 0x51ed270b);
   const taken = new Set<string>();
   const key = (tx: number, ty: number): string => `${tx},${ty}`;
@@ -40,36 +40,25 @@ export function populateFloor(world: World, renderer: RenderSystem, dungeon: Dun
     const c = roomCenter(room);
     return tileCenter(c.x, c.y);
   };
-  const claimCenter = (room: Room): Point => {
-    const c = roomCenter(room);
-    taken.add(key(c.x, c.y));
-    return tileCenter(c.x, c.y);
-  };
+
+  // Everything the generator planned keeps its tile: chests, terminals and hazards claim theirs first.
+  const plan = dungeon.plan;
+  for (const c of plan.chests) taken.add(key(c.tx, c.ty));
+  for (const t of plan.terminals) taken.add(key(t.tx, t.ty));
+  for (const h of plan.hazards) for (let y = h.ty; y < h.ty + h.h; y++) for (let x = h.tx; x < h.tx + h.w; x++) taken.add(key(x, y));
+  for (const m of plan.medics) taken.add(key(m.tx, m.ty));
 
   const bots = populateEnemies(world, renderer, dungeon);
-
-  // Chests first, so a keycard never lands on the chest's tile.
-  for (const room of rooms.filter((r) => r.type === 'CHEST')) {
-    const roll = rng.next();
-    const tier = roll < 0.55 - 0.05 * floor ? 1 : roll < 0.9 ? 2 : 3;
-    const c = claimCenter(room);
-    createChest(world, renderer, c.x, c.y, tier);
+  for (const c of plan.chests) createChest(world, renderer, c);
+  for (const t of plan.terminals) createTerminal(world, renderer, t.tx, t.ty);
+  for (const h of plan.hazards) createHazard(world, renderer, h);
+  for (const m of plan.medics) {
+    const p = tileCenter(m.tx, m.ty);
+    createMedic(world, renderer, p.x, p.y, MEDIC_COST);
   }
   for (const [color, roomId] of Object.entries(dungeon.keyRooms) as [KeyColor, string][]) {
     const p = spot(roomById(roomId));
     createPickup(world, renderer, p.x, p.y, { kind: 'KEY', id: color, amount: 1 });
-  }
-
-  const secret = rooms.find((r) => r.type === 'SECRET');
-  if (secret) {
-    const c = claimCenter(secret);
-    const prize = rng.chance(0.5) ? IMPLANTS.OVERCLOCK.id : IMPLANTS.RICOCHET_COATING.id;
-    createPickup(world, renderer, c.x - 14, c.y, { kind: 'IMPLANT', id: prize, amount: 1 });
-    createPickup(world, renderer, c.x + 14, c.y, { kind: 'CREDITS', id: null, amount: 30 + 10 * floor });
-  }
-  if (dungeon.breakerRoomId) {
-    const p = spot(roomById(dungeon.breakerRoomId));
-    createBreaker(world, renderer, p.x, p.y);
   }
 
   const shop = rooms.find((r) => r.type === 'SHOP');

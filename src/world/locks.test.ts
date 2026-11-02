@@ -64,28 +64,23 @@ test('shops only on even floors, at most one, never holding a key', () => {
   }
 });
 
-test('secret rooms touch 2-3 rooms through SECRET_WALL tiles and have no other entrance', () => {
+test('secret rooms: one hidden wall each, sealed until it is pushed, reachable afterwards', () => {
   let withSecret = 0;
   for (let seed = 1; seed <= 150; seed++) {
-    const d = generateDungeon(seed);
-    const secret = d.rooms.find((r) => r.type === 'SECRET');
+    const d = generateDungeon(seed, { floor: 1 + (seed % 4) });
     const walls: { x: number; y: number }[] = [];
     for (let y = 0; y < d.map.height; y++) for (let x = 0; x < d.map.width; x++) if (d.map.get(x, y) === 'SECRET_WALL') walls.push({ x, y });
-    if (!secret) {
-      assert.equal(walls.length, 0);
-      assert.equal(d.breakerRoomId, null);
-      continue;
-    }
-    withSecret++;
-    assert.ok(secret.connectedRoomIds.length >= 2 && secret.connectedRoomIds.length <= 3, `seed ${seed}`);
-    assert.equal(walls.length, secret.connectedRoomIds.length);
-    assert.ok(d.breakerRoomId, `seed ${seed}: secret room without an Access Breaker`);
-    // Sealed while the walls stand; reachable once they are gone.
+    assert.equal(walls.length, d.plan.secrets.length, `seed ${seed}: wall count`);
     const spawnRoom = d.rooms.find((r) => r.type === 'SPAWN');
     assert.ok(spawnRoom);
-    assert.ok(!floodRooms(d.map, d.rooms, roomCenter(spawnRoom)).has(secret.id), `seed ${seed}: secret room is open`);
-    for (const w of walls) d.map.set(w.x, w.y, 'FLOOR');
-    assert.ok(floodRooms(d.map, d.rooms, roomCenter(spawnRoom)).has(secret.id), `seed ${seed}: walls do not lead in`);
+    for (const s of d.plan.secrets) {
+      withSecret++;
+      const room = d.rooms.find((r) => r.id === s.roomId);
+      assert.ok(room);
+      assert.ok(!floodRooms(d.map, d.rooms, roomCenter(spawnRoom)).has(room.id), `seed ${seed}: secret room is open`);
+      d.map.set(s.wall.x, s.wall.y, 'FLOOR');
+      assert.ok(floodRooms(d.map, d.rooms, roomCenter(spawnRoom)).has(room.id), `seed ${seed}: the wall does not lead in`);
+    }
   }
-  assert.ok(withSecret > 60, `only ${withSecret}/150 floors had a secret room`);
+  assert.ok(withSecret >= 150, `only ${withSecret} secret rooms in 150 floors`);
 });

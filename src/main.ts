@@ -12,6 +12,7 @@ import { SettingsStore } from './settings/SettingsStore';
 import { AISystem } from './systems/AISystem';
 import { AudioSystem } from './systems/AudioSystem';
 import { DashTrailSystem } from './systems/DashTrailSystem';
+import { EnvironmentSystem } from './systems/EnvironmentSystem';
 import { CharacterSystem } from './systems/CharacterSystem';
 import { FogSystem } from './systems/FogSystem';
 import { HealthSystem } from './systems/HealthSystem';
@@ -50,6 +51,7 @@ const ai = new AISystem(render, noise, audio);
 const weapons = new WeaponSystem(render, noise, projectiles, audio);
 const projectileHits = new ProjectileSystem(render, projectiles, audio);
 const interact = new InteractSystem(render, noise, state, audio);
+const environment = new EnvironmentSystem(render, noise, audio, state);
 const vision = new VisionRaycastSystem();
 const fog = new FogSystem(render);
 const hud = new HudSystem(render, state, fog);
@@ -69,7 +71,7 @@ const levels = new LevelManager({
   fog,
   vision,
   mapUsers: [physics, ai, weapons, projectileHits],
-  levelUsers: [interact, projectileHits, hud],
+  levelUsers: [interact, projectileHits, hud, environment],
 });
 interact.onDescend = () => levels.requestDescend();
 const run = new RunController({ game, world: game.world, levels, state, hud, input, profile });
@@ -90,7 +92,8 @@ game
   .addSystem(new NoiseEmitterSystem(noise, audio))
   .addSystem(new NoisePropagationSystem(noise))
   .addSystem(interact)
-  .addSystem(new PickupSystem(state, audio))
+  .addSystem(environment)
+  .addSystem(new PickupSystem(state, audio, render))
   .addSystem(health)
   .addSystem(new DashTrailSystem(render))
   .addSystem(new LifetimeSystem())

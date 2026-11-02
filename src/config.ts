@@ -1,3 +1,5 @@
+import type { RoomKind } from './types';
+
 export const TILE_SIZE = 48;
 
 /** Simulation step. Systems' `update` always receives exactly this dt. */
@@ -93,7 +95,87 @@ export const DUNGEON = {
   roomMax: 14,
   corridorWidth: 2,
   /** Extra corridors beyond the spanning tree, as a fraction of its edge count. */
-  loopFraction: 0.15,
+  loopFraction: 0.3,
+  /** Chance a leaf hosts an elongated room (service corridor) when it is wide enough. */
+  longRoomChance: 0.22,
+  /** Elongated rooms: short edge range and the longest edge. */
+  longRoom: { shortMin: 4, shortMax: 5, longMax: 16 },
+} as const;
+
+/** Where the generator spends its attention: tune a floor's feel here, not in the layouts. */
+export const WORLD = {
+  /** Closets and vault annexes carved per floor: [min, max] by floor index (floor 1 first). */
+  closetsPerFloor: (floor: number): [number, number] => (floor <= 1 ? [1, 2] : [1, 3]),
+  /** A shutter vault (opened from a terminal) appears from this floor on. */
+  vaultFromFloor: 2,
+  vaultChance: 0.7,
+  /** Secret rooms: guaranteed one per floor, a second one from this floor with this chance. */
+  secondSecretFromFloor: 3,
+  secondSecretChance: 0.5,
+  /** Hazard patches per eligible room: chance and how many more per floor. */
+  hazardChance: (floor: number): number => Math.min(0.95, 0.6 + 0.06 * floor),
+  /** Chance a service corridor is guarded by a tripwire. */
+  tripwireChance: (floor: number): number => Math.min(0.85, 0.5 + 0.06 * floor),
+} as const;
+
+/** Bots per room kind: [min, max] before the per-floor extras. Total stays close to the old 1-3 per room. */
+export const ROOM_ENEMIES = {
+  ENTRY: [0, 0],
+  DEPOT: [2, 3],
+  WORKSHOP: [2, 3],
+  SECURITY: [3, 4],
+  LAB: [2, 3],
+  MARKET: [1, 3],
+  SERVICE: [1, 3],
+  SUPPLY: [1, 2],
+  MEDICAL: [0, 1],
+  TECH: [1, 2],
+  VAULT: [0, 0],
+  SHOP: [0, 0],
+  EXTRACTION: [3, 4],
+  SECRET: [0, 0],
+  ANNEX: [0, 0],
+} as const satisfies Record<RoomKind, readonly [number, number]>;
+
+/** Destructible obstacles. Damage comes from any bullet or blast. */
+export const DESTRUCTIBLE = {
+  CRATE: { hp: 36 },
+  BARREL: { hp: 20, radius: 110, damage: 48, wallDamage: 160 },
+  WEAK_WALL: { hp: 150 },
+} as const;
+
+/** Floor hazards. All are drawn with a warning and can be walked around. */
+export const HAZARDS = {
+  shock: { cycle: 2.8, warn: 1.1, active: 0.5, damage: 14 },
+  toxic: { dps: 6 },
+  laser: { alarmSeconds: 7, pulse: 1.1, cooldown: 12, hearing: 760 },
+} as const;
+
+/** Reward tuning. Chances are per room; amounts grow with the floor. */
+export const REWARDS = {
+  /** Chance of a stray supply cache by room kind (supply rooms always get theirs). */
+  cacheChance: {
+    ENTRY: 0.35, DEPOT: 0.45, WORKSHOP: 0.4, SECURITY: 0.45, LAB: 0.4, MARKET: 0.35, SERVICE: 0.3,
+    MEDICAL: 0.5, TECH: 0.35, EXTRACTION: 0.3,
+  } as Partial<Record<RoomKind, number>>,
+  supplyWeights: { AMMO: 4, MED: 3, CREDITS: 3 },
+  credits: { base: 12, perFloor: 4, special: 18 },
+  /** Fraction of max HP a medical kit restores (shield refills in full). */
+  medFraction: 0.4,
+  /** Spare magazines an ammo cache grants. */
+  ammoMagazines: 1,
+  /** Special chest tier odds by floor: [tier1, tier2] cumulative thresholds, the rest is tier 3. */
+  specialTier: (floor: number): [number, number] => [Math.max(0.15, 0.55 - 0.06 * floor), Math.max(0.55, 0.92 - 0.04 * floor)],
+} as const;
+
+/** Enemy scaling per floor, kept in one place. */
+export const DIFFICULTY = {
+  extraBotsFromFloor: 3,
+  hpPerFloor: 0.1,
+  damagePerFloor: 0.04,
+  /** Share of bots carrying the SMG / shotgun, raised each floor. */
+  smgChance: (floor: number): number => Math.min(0.4, 0.25 + 0.02 * floor),
+  shotgunChance: (floor: number): number => Math.min(0.3, 0.1 + 0.03 * floor),
 } as const;
 
 /** Input magnitude (stick or keys) below which the gait is SNEAK: slow and silent. */

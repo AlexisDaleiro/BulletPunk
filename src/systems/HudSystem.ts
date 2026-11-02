@@ -211,7 +211,7 @@ export class HudSystem implements System {
           let color: number;
           if (tile === 'DOOR_LOCKED') color = doorColors.get(ty * map.width + tx) ?? COLORS.amber;
           else if (tile === 'EXIT_ELEVATOR') color = COLORS.amber;
-          else if (tile === 'WALL' || tile === 'SECRET_WALL') color = MINI_WALL;
+          else if (map.isSolid(tx, ty)) color = MINI_WALL;
           else color = inShop ? MINI_SHOP : MINI_FLOOR;
           add(color, tx * scale, ty * scale);
         }

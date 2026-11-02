@@ -1,12 +1,13 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { COLORS } from '../config';
+import { COLORS, TILE_SIZE } from '../config';
 import { createTransform, type InteractableComponent } from '../ecs/components';
 import type { Entity, World } from '../ecs/World';
+import { ChestGraphic } from '../render/chestGraphic';
 import type { RenderSystem } from '../systems/RenderSystem';
+import type { ChestSpawn, HazardSpawn } from '../world/plan';
 
+const T = TILE_SIZE;
 const MAGENTA = 0xff007f;
-/** Chest tier 1, 2, 3. */
-const TIER_COLORS = [COLORS.cyan, COLORS.amber, MAGENTA] as const;
 
 export interface ShopOffer {
   kind: 'WEAPON' | 'IMPLANT' | 'AMMO';
@@ -29,18 +30,16 @@ function spawnProp(world: World, renderer: RenderSystem, x: number, y: number, n
   return entity;
 }
 
-/** Locked-room chest. Tier 1-3 sets its glow and what it can hold. */
-export function createChest(world: World, renderer: RenderSystem, x: number, y: number, tier: 1 | 2 | 3): Entity {
-  const color = TIER_COLORS[tier - 1];
-  const node = new Graphics()
-    .roundRect(-15, -11, 30, 22, 3)
-    .fill(0x10202e)
-    .stroke({ width: 2, color })
-    .rect(-15, -3, 30, 3)
-    .fill({ color, alpha: 0.5 })
-    .circle(0, 0, 3)
-    .fill(color);
-  return spawnProp(world, renderer, x, y, node, { kind: 'CHEST', payload: String(tier), cost: 0, label: 'CHEST', used: false });
+/**
+ * A chest from the generator's plan. The node is a ChestGraphic whose lid and LEDs the environment
+ * system animates; the contents are rolled only when it is opened.
+ */
+export function createChest(world: World, renderer: RenderSystem, c: ChestSpawn): Entity {
+  const node = new ChestGraphic(c.family, c.category, c.tier);
+  const name = c.family === 'SPECIAL' ? 'SPECIAL CASE' : c.category === 'AMMO' ? 'AMMO CRATE' : c.category === 'MED' ? 'MED KIT' : 'CREDIT BOX';
+  const entity = spawnProp(world, renderer, (c.tx + 0.5) * T, (c.ty + 0.5) * T, node, { kind: 'CHEST', payload: c.id, cost: 0, label: name, used: false });
+  world.add(entity, 'chest', { family: c.family, category: c.category, tier: c.tier, seed: c.seed, state: 'CLOSED', t: 0 });
+  return entity;
 }
 
 /** A priced item on a pedestal. */
@@ -90,16 +89,54 @@ export function createMedic(world: World, renderer: RenderSystem, x: number, y: 
   return spawnProp(world, renderer, x, y, node, { kind: 'MEDIC', payload: '', cost, label: 'MEDICAL STATION', used: false });
 }
 
-/** Access Breaker node: hacking it cracks every secret wall on the floor open. */
-export function createBreaker(world: World, renderer: RenderSystem, x: number, y: number): Entity {
+/** Security terminal: one use opens every shutter on the floor and disarms the tripwires. */
+export function createTerminal(world: World, renderer: RenderSystem, tx: number, ty: number): Entity {
   const node = new Graphics()
-    .rect(-12, -14, 24, 28)
-    .fill(0x0b1620)
-    .stroke({ width: 2, color: COLORS.amber })
-    .moveTo(-6, -8)
-    .lineTo(2, -2)
-    .lineTo(-3, 3)
-    .lineTo(6, 9)
-    .stroke({ width: 2, color: COLORS.amber });
-  return spawnProp(world, renderer, x, y, node, { kind: 'BREAKER', payload: '', cost: 0, label: 'ACCESS BREAKER', used: false });
+    .roundRect(-13, -12, 26, 24, 3)
+    .fill(0x10181d)
+    .stroke({ width: 2, color: 0x6fb4ff })
+    .rect(-9, -8, 18, 10)
+    .fill({ color: 0x6fb4ff, alpha: 0.45 })
+    .rect(-9, 5, 6, 3)
+    .fill(0x6fb4ff)
+    .rect(-1, 5, 10, 3)
+    .fill({ color: 0x6fb4ff, alpha: 0.35 });
+  return spawnProp(world, renderer, (tx + 0.5) * T, (ty + 0.5) * T, node, { kind: 'TERMINAL', payload: '', cost: 0, label: 'SECURITY TERMINAL', used: false });
+}
+
+/**
+ * A hazard strip. Drawn with its own warning (hazard stripes, status lights); the environment
+ * system animates the node's `alpha` cycle and applies the effect.
+ */
+export function createHazard(world: World, renderer: RenderSystem, h: HazardSpawn): Entity {
+  const entity = world.create();
+  const x = h.tx * T;
+  const y = h.ty * T;
+  const w = h.w * T;
+  const hgt = h.h * T;
+  const node = new Container();
+  const art = new Graphics();
+  if (h.kind === 'SHOCK') {
+    art.rect(4, 4, w - 8, hgt - 8).fill({ color: 0x1a1d16, alpha: 0.9 }).stroke({ color: 0xffe600, width: 2.5, alpha: 0.8 });
+    for (let i = 0; i < w + hgt; i += 12) art.moveTo(4 + Math.min(i, w - 8), 4 + Math.max(0, i - w + 8)).lineTo(4 + Math.max(0, i - hgt + 8), 4 + Math.min(i, hgt - 8)).stroke({ color: 0xffe600, width: 2, alpha: 0.35 });
+    for (const px of [10, w - 10]) art.circle(px, hgt / 2, 3).fill(0xffe600);
+  } else if (h.kind === 'TOXIC') {
+    art.rect(2, 2, w - 4, hgt - 4).stroke({ color: 0x8dff6a, width: 2, alpha: 0.55 });
+    for (let i = 0; i < 4; i++) art.circle(14 + i * 22, 14 + (i % 2) * 28, 4 + (i % 3)).fill({ color: 0xa6ffb4, alpha: 0.25 });
+  } else {
+    // Tripwire: two emitter posts in the walls and a beam between them.
+    const horiz = h.w > h.h;
+    const a = horiz ? [-T / 2 + 6, hgt / 2] : [w / 2, -T / 2 + 6];
+    const b = horiz ? [w + T / 2 - 6, hgt / 2] : [w / 2, hgt + T / 2 - 6];
+    art.moveTo(a[0], a[1]).lineTo(b[0], b[1]).stroke({ color: 0xff2a55, width: 2.2, alpha: 0.9 });
+    for (const p of [a, b]) art.roundRect(p[0] - 7, p[1] - 7, 14, 14, 3).fill(0x1b1d22).stroke({ color: 0xff2a55, width: 1.5 }).circle(p[0], p[1], 3).fill(0xff2a55);
+  }
+  node.addChild(art);
+  node.position.set(x, y);
+  world.add(entity, 'hazard', { kind: h.kind, x, y, w, h: hgt, clock: h.kind === 'LASER' ? 99 : Math.random() * 2, active: h.kind === 'LASER', disabled: false, hit: [] });
+  world.add(entity, 'fogged', {});
+  // Hazards sit at the origin of their box, not the centre: the transform keeps the node where the tiles are.
+  world.add(entity, 'transform', createTransform(x, y));
+  renderer.attach(world, entity, 'shadows', node);
+  return entity;
 }

@@ -51,8 +51,11 @@ test('every room of 20 dungeons is reachable from the spawn room', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const d = generateDungeon(seed);
     for (const r of d.rooms) {
-      if (r.type === 'CHEST' || r.type === 'SECRET') continue; // sealed until a key or a blast
-      const to = { x: (r.x + Math.floor(r.width / 2) + 0.5) * T, y: (r.y + Math.floor(r.height / 2) + 0.5) * T };
+      if (r.type === 'CHEST' || r.type === 'SECRET') continue; // sealed until a key or a push
+      if (r.type === 'ANNEX' && d.plan.shutters.some((x) => x.roomId === r.id)) continue; // behind a shutter
+      // Obstacles may sit on the center: aim for any walkable tile of the room.
+      let to = { x: 0, y: 0 };
+      for (let y = r.y; y < r.y + r.height; y++) for (let x = r.x; x < r.x + r.width; x++) if (!d.map.isSolid(x, y)) to = { x: (x + 0.5) * T, y: (y + 0.5) * T };
       const path = findPath(d.map, d.spawn, to);
       assert.ok(path.length > 0 || Math.hypot(to.x - d.spawn.x, to.y - d.spawn.y) < T, `seed ${seed} ${r.id}`);
       assert.ok(legsClear(d.map, d.spawn, path), `seed ${seed} ${r.id}: clipped a wall`);
