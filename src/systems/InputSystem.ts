@@ -37,6 +37,7 @@ export class InputSystem implements System {
       intent.wantsDash = s.dash;
       intent.wantsInteract = s.interact;
       intent.wantsSwap = s.swap;
+      intent.wantsAbility = s.ability;
     });
   }
 }

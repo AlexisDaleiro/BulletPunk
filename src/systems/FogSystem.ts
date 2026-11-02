@@ -73,7 +73,7 @@ export class FogSystem implements System {
     this.polygon = null;
     world.each(['playerControlled', 'vision', 'transform'], (_entity, _tag, vision, t) => {
       this.polygon = vision.polygon;
-      this.reveal(vision.polygon, t.x, t.y, vision.range);
+      this.reveal(vision.polygon, t.x, t.y, vision.effectiveRange ?? vision.range);
     });
 
     const polygon = this.polygon as number[] | null;

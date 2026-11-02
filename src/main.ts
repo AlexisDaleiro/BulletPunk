@@ -12,6 +12,7 @@ import { SettingsStore } from './settings/SettingsStore';
 import { AISystem } from './systems/AISystem';
 import { AudioSystem } from './systems/AudioSystem';
 import { DashTrailSystem } from './systems/DashTrailSystem';
+import { CharacterSystem } from './systems/CharacterSystem';
 import { FogSystem } from './systems/FogSystem';
 import { HealthSystem } from './systems/HealthSystem';
 import { HudSystem } from './systems/HudSystem';
@@ -52,6 +53,7 @@ const interact = new InteractSystem(render, noise, state, audio);
 const vision = new VisionRaycastSystem();
 const fog = new FogSystem(render);
 const hud = new HudSystem(render, state, fog);
+hud.onAbilityStatus = (text, ready, active) => input.setAbilityStatus(text, ready, active);
 const health = new HealthSystem(render, audio);
 health.onKill = () => {
   state.kills++;
@@ -81,6 +83,7 @@ game
   .addSystem(new InputSystem(input, render, state))
   .addSystem(ai)
   .addSystem(physics)
+  .addSystem(new CharacterSystem(render))
   .addSystem(new LocomotionSystem())
   .addSystem(weapons)
   .addSystem(projectileHits)

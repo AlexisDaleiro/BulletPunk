@@ -105,3 +105,16 @@
   right: calc(var(--edge-r) + var(--main) + var(--gap));
   bottom: calc(var(--edge-b) + var(--main) + var(--gap));
 }
+
+.touch-btn.ability {
+  right: calc(var(--edge-r) + var(--main) + var(--btn) + var(--gap) * 2);
+  width: var(--main);
+  height: var(--main);
+  border-color: #d1bbef;
+  color: #e7dbf7;
+  background: rgba(107, 78, 143, 0.25);
+  white-space: pre-line;
+  box-shadow: none;
+}
+.touch-btn.ability[aria-disabled='true'] { opacity: 0.55; }
+.touch-btn.ability.active { opacity: 1; background: rgba(133, 100, 175, 0.65); }

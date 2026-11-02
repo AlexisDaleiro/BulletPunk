@@ -3,6 +3,7 @@ import { createTransform } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
 import { createOperativeGraphic } from '../entities/player';
+import { Graphics } from 'pixi.js';
 import type { RenderSystem } from './RenderSystem';
 
 const TRAIL_LIFE = 0.3;
@@ -17,7 +18,7 @@ export class DashTrailSystem implements System {
   }
 
   update(world: World, dt: number): void {
-    world.each(['transform', 'locomotion'], (_entity, t, loc) => {
+    world.each(['transform', 'locomotion'], (entity, t, loc) => {
       if (loc.dashTimer <= 0) return;
       loc.trailTimer -= dt;
       if (loc.trailTimer > 0) return;
@@ -27,7 +28,8 @@ export class DashTrailSystem implements System {
       world
         .add(ghost, 'transform', createTransform(t.x, t.y, t.angle))
         .add(ghost, 'lifetime', { age: 0, duration: TRAIL_LIFE, startAlpha: TRAIL_ALPHA });
-      const node = createOperativeGraphic(COLORS.cyan);
+      const def = world.get(entity, 'character')?.def;
+      const node = def ? new Graphics().ellipse(-2, 0, 11, def.id === 'BRASA' ? 16 : 12).fill(def.color) : createOperativeGraphic(COLORS.cyan);
       node.alpha = TRAIL_ALPHA;
       this.renderer.attach(world, ghost, 'shadows', node);
     });

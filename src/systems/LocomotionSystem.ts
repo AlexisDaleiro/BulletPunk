@@ -1,4 +1,5 @@
 import { SNEAK_INPUT } from '../config';
+import { abilityModifiers } from '../characters/abilities';
 import { smoothAngle } from '../core/math';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
@@ -35,7 +36,7 @@ export class LocomotionSystem implements System {
         t.vy = loc.dashDirY * loc.dashSpeed;
       } else {
         const speedMult = world.get(entity, 'passiveSynergy')?.stats.moveSpeedMult ?? 1;
-        const scale = (inputLen > 1 ? 1 / inputLen : 1) * loc.runSpeed * speedMult;
+        const scale = (inputLen > 1 ? 1 / inputLen : 1) * loc.runSpeed * speedMult * abilityModifiers(world.get(entity, 'character')).speedMult;
         const targetX = intent.moveX * scale;
         const targetY = intent.moveY * scale;
         const dvx = targetX - t.vx;

@@ -77,6 +77,7 @@ export function recomputeStats(syn: PassiveSynergyComponent): void {
     s.moveSpeedMult *= m.moveSpeedMult ?? 1;
     s.visionRangeMult *= m.visionRangeMult ?? 1;
     s.noiseDampingMult *= m.noiseDampingMult ?? 1;
+    s.movementNoiseMult *= m.movementNoiseMult ?? 1;
     s.damageMult *= m.damageMult ?? 1;
     s.fireRateMult *= m.fireRateMult ?? 1;
     s.visionAngleBonus += m.visionAngleBonus ?? 0;

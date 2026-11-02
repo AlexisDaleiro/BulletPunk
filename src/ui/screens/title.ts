@@ -23,8 +23,7 @@ export function titleScreen(ctx: UiContext): HTMLElement {
     button(
       'PLAY',
       () => {
-        ctx.close();
-        run.startRun(profile.value.lastCharacter, ctx.takeSeed());
+        ctx.go('character');
       },
       resumable ? '' : 'primary',
     ),
@@ -37,7 +36,7 @@ export function titleScreen(ctx: UiContext): HTMLElement {
   const logo = el(
     'div',
     'logo',
-    el('h1', '', 'CYBER-ECHO'),
+    el('h1', '', 'BULLETPUNK'),
     el('p', 'tagline', 'PROTOCOL ZERO'),
     el('p', 'meta', `${profile.value.name} · ${getCharacter(profile.value.lastCharacter).name}`),
   );

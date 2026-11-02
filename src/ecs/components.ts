@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import type { CharacterDef } from '../characters/characters.ts';
 // `.ts` extension: Node's test runner needs it for runtime imports (type imports are erased).
 import { LOCOMOTION, NOISE_PROFILES, PLAYER_VITALS, VISION } from '../config.ts';
 import type { CyberwarePassive, WeaponDefinition } from '../types';
@@ -22,9 +23,22 @@ export interface HealthComponent {
   maxShield: number;
   /** Seconds of damage immunity left. */
   invulnerableTimer: number;
+  /** Expires separately, without changing maxShield or implant regeneration. */
+  temporaryShield?: number;
+  hitFlash?: number;
+}
+
+export interface CharacterComponent {
+  def: CharacterDef;
+  activeRemaining: number;
+  cooldownRemaining: number;
+  activationFlash: number;
+  recoil: number;
+  trailTimer: number;
 }
 
 export interface VisionComponent {
+  effectiveRange?: number;
   /** Cone full angle, radians. */
   fov: number;
   /** Cone range, px. */
@@ -153,6 +167,7 @@ export interface IntentComponent {
   wantsDash: boolean;
   wantsInteract: boolean;
   wantsSwap: boolean;
+  wantsAbility: boolean;
 }
 
 /** Tag: this entity's intent is filled from the InputManager. */
@@ -194,6 +209,7 @@ export interface LifetimeComponent {
 }
 
 export interface ComponentMap {
+  character: CharacterComponent;
   transform: TransformComponent;
   health: HealthComponent;
   vision: VisionComponent;
@@ -228,6 +244,7 @@ export function createIntent(aimAngle = 0): IntentComponent {
     wantsDash: false,
     wantsInteract: false,
     wantsSwap: false,
+    wantsAbility: false,
   };
 }
 
@@ -275,7 +292,7 @@ export function createLocomotion(): LocomotionComponent {
 }
 
 export function createHealth(hp: number = PLAYER_VITALS.hp, shield: number = PLAYER_VITALS.shield): HealthComponent {
-  return { hp, maxHp: hp, shield, maxShield: shield, invulnerableTimer: 0 };
+  return { hp, maxHp: hp, shield, maxShield: shield, invulnerableTimer: 0, temporaryShield: 0, hitFlash: 0 };
 }
 
 export function createVision(): VisionComponent {
@@ -293,6 +310,7 @@ export function neutralStats(): PassiveSynergyComponent['stats'] {
     visionRangeMult: 1,
     visionAngleBonus: 0,
     noiseDampingMult: 1,
+    movementNoiseMult: 1,
     damageMult: 1,
     fireRateMult: 1,
     bulletBounces: 0,

@@ -5,6 +5,7 @@ export type InputMode = 'desktop' | 'touch';
 
 /** One sampled frame of input, identical in shape for both modes. Reused between polls. */
 export interface InputState {
+  ability: boolean;
   mode: InputMode;
   /** Move vector, length 0..1. Short = sneak. */
   moveX: number;
@@ -33,21 +34,24 @@ const BLOCKED_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
  * switches to the overlay, a key press or mouse event switches back.
  *
  * Desktop: WASD/arrows move, mouse aims, left click fires, R reload, Space/Shift dash,
- * E interact, Q swap weapon, hold C to sneak (silent).
+ * E interact, Q swap weapon, F ability, hold C to sneak (silent).
  */
 export class InputManager {
   private mode: InputMode;
   private readonly host: HTMLElement;
   private readonly touch: TouchControls;
   private readonly keys = new Set<string>();
-  private readonly edges: ActionEdges = { dash: false, reload: false, interact: false, swap: false };
+  private readonly edges: ActionEdges = { dash: false, reload: false, interact: false, swap: false, ability: false };
   /** False while a menu is up: every event is ignored so clicking a button cannot fire the weapon. */
   private active = true;
   private mouseDown = false;
+  /** Keep very short clicks until the next fixed step samples input. */
+  private firePressed = false;
   private pointerX = 0;
   private pointerY = 0;
   private hasPointer = false;
   private readonly state: InputState = {
+    ability: false,
     mode: 'desktop',
     moveX: 0,
     moveY: 0,
@@ -100,8 +104,14 @@ export class InputManager {
     s.reload = this.edges.reload;
     s.interact = this.edges.interact;
     s.swap = this.edges.swap;
+    s.ability = this.edges.ability;
+    this.edges.ability = false;
     this.edges.dash = this.edges.reload = this.edges.interact = this.edges.swap = false;
     return s;
+  }
+
+  setAbilityStatus(text: string, ready: boolean, active: boolean): void {
+    this.touch.setAbilityStatus(text, ready, active);
   }
 
   private readDesktop(s: InputState): void {
@@ -117,7 +127,8 @@ export class InputManager {
     s.aimActive = false;
     s.aimX = 0;
     s.aimY = 0;
-    s.fire = this.mouseDown;
+    s.fire = this.mouseDown || this.firePressed;
+    this.firePressed = false;
   }
 
   private readTouch(s: InputState): void {
@@ -157,7 +168,9 @@ export class InputManager {
   readonly releaseAll = (): void => {
     this.keys.clear();
     this.mouseDown = false;
+    this.firePressed = false;
     this.edges.dash = this.edges.reload = this.edges.interact = this.edges.swap = false;
+    this.edges.ability = false;
     this.touch.reset();
   };
 
@@ -171,6 +184,7 @@ export class InputManager {
     else if (e.code === 'KeyR') this.edges.reload = true;
     else if (e.code === 'KeyE') this.edges.interact = true;
     else if (e.code === 'KeyQ') this.edges.swap = true;
+    else if (e.code === 'KeyF') this.edges.ability = true;
   };
 
   private readonly onKeyUp = (e: KeyboardEvent): void => {
@@ -185,7 +199,10 @@ export class InputManager {
     }
     this.setMode('desktop');
     this.trackPointer(e);
-    if (e.button === 0) this.mouseDown = true;
+    if (e.button === 0) {
+      this.mouseDown = true;
+      this.firePressed = true;
+    }
   };
 
   private readonly onPointerMove = (e: PointerEvent): void => {

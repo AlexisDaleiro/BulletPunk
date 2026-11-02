@@ -6,9 +6,13 @@ import type { HealthComponent } from '../ecs/components';
  */
 export function applyDamage(health: HealthComponent, amount: number): number {
   if (amount <= 0 || health.hp <= 0 || health.invulnerableTimer > 0) return 0;
+  const temporary = Math.min(health.temporaryShield ?? 0, amount);
+  health.temporaryShield = (health.temporaryShield ?? 0) - temporary;
+  amount -= temporary;
   const soaked = Math.min(health.shield, amount);
   health.shield -= soaked;
   const through = Math.min(health.hp, amount - soaked);
   health.hp -= through;
-  return soaked + through;
+  health.hitFlash = 0.18;
+  return temporary + soaked + through;
 }

@@ -5,6 +5,8 @@ import type { Entity, World } from '../ecs/World';
 import type { RenderSystem } from '../systems/RenderSystem';
 
 export interface ShotSpec {
+  range?: number;
+  color?: number;
   x: number;
   y: number;
   angle: number;
@@ -48,11 +50,11 @@ export class ProjectilePool {
     p.piercing = spec.piercing;
     p.explosive = spec.explosive;
     p.bounces = spec.bounces;
-    p.life = BULLET_RANGE / spec.speed;
+    p.life = (spec.range ?? BULLET_RANGE) / spec.speed;
     p.hit.length = 0;
 
     // Neon bolt pointing along +x (the node rotates with the transform): a bright head and a trail.
-    const color = spec.team === 'PLAYER' ? COLORS.cyan : COLORS.red;
+    const color = spec.color ?? (spec.team === 'PLAYER' ? COLORS.cyan : COLORS.red);
     const heavy = spec.piercing;
     const length = heavy ? 90 : Math.min(60, Math.max(14, spec.speed * 0.05));
     const width = heavy ? 5 : 2.5;

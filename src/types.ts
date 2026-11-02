@@ -52,7 +52,9 @@ export interface WeaponDefinition {
   magazineSize: number;
   reloadTime: number; // seconds
   projectileSpeed: number; // px/sec
+  range?: number; // world pixels; defaults to BULLET_RANGE
   noiseProfile: 'SILENT' | 'MODERATE' | 'LOUD' | 'EXPLOSIVE';
+  noiseScale?: number; // Suppressor attenuation inside a noise profile
   specialAttributes?: {
     piercing?: boolean;
     ricochetCount?: number;
@@ -71,6 +73,7 @@ export interface CyberwarePassive {
     visionRangeMult?: number;
     visionAngleBonus?: number;
     noiseDampingMult?: number; // Reduces player's sound ripple radius
+    movementNoiseMult?: number; // Footsteps only; stacks with general noise damping
     damageMult?: number;
     fireRateMult?: number;
     bulletBounces?: number;

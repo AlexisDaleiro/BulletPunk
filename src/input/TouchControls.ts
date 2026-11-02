@@ -3,6 +3,7 @@ import './touch.css';
 
 /** One-shot button presses. Shared with InputManager, which latches keyboard presses into it too. */
 export interface ActionEdges {
+  ability: boolean;
   dash: boolean;
   reload: boolean;
   interact: boolean;
@@ -68,7 +69,7 @@ class Stick {
 
 /**
  * DOM overlay for touch play: floating move stick (left half), floating aim stick (right half),
- * and Dash / Reload / Interact buttons. Hidden unless the InputManager is in touch mode.
+ * and Dash / Reload / Interact / Skill buttons. Hidden unless input is in touch mode.
  */
 export class TouchControls {
   readonly move = new Stick('stick-base');
@@ -76,6 +77,7 @@ export class TouchControls {
   private readonly root = div('touch-ui');
   private readonly edges: ActionEdges;
   private release: { x: number; y: number } | null = null;
+  private readonly abilityButton: HTMLButtonElement;
 
   constructor(host: HTMLElement, edges: ActionEdges) {
     this.edges = edges;
@@ -85,6 +87,8 @@ export class TouchControls {
     this.addButton('RELOAD', 'reload', 'reload');
     this.addButton('HACK', 'interact', 'interact');
     this.addButton('DASH', 'dash', 'dash');
+    this.abilityButton = this.addButton('SKILL', 'ability', 'ability');
+    this.abilityButton.setAttribute('aria-label', 'Activar habilidad');
 
     this.root.addEventListener('pointerdown', (e) => {
       const stick = e.clientX < this.root.clientWidth / 2 ? this.move : this.aim;
@@ -117,11 +121,18 @@ export class TouchControls {
     this.root.style.display = visible ? '' : 'none';
   }
 
+  setAbilityStatus(text: string, ready: boolean, active: boolean): void {
+    if (this.abilityButton.textContent !== text) this.abilityButton.textContent = text;
+    this.abilityButton.setAttribute('aria-disabled', String(!ready));
+    this.abilityButton.classList.toggle('active', active);
+  }
+
   /** Releases every held control, e.g. when switching input mode. */
   reset(): void {
     this.move.end();
     this.aim.end();
     this.release = null;
+    this.root.querySelectorAll('.touch-btn.on').forEach((button) => button.classList.remove('on'));
   }
 
   /** The aim vector from a just-released aim stick, once; null if there was none. */
@@ -131,7 +142,7 @@ export class TouchControls {
     return r;
   }
 
-  private addButton(label: string, className: string, edge: keyof ActionEdges): void {
+  private addButton(label: string, className: string, edge: keyof ActionEdges): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `touch-btn ${className}`;
@@ -147,5 +158,6 @@ export class TouchControls {
     button.addEventListener('pointercancel', off);
     button.addEventListener('pointerleave', off);
     this.root.appendChild(button);
+    return button;
   }
 }

@@ -1,6 +1,6 @@
 import { Graphics, Text } from 'pixi.js';
 import { COLORS, KEY_INFO, TILE_SIZE } from '../config';
-import type { HealthComponent, WeaponInventoryComponent } from '../ecs/components';
+import type { CharacterComponent, HealthComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
 import type { GameState } from '../game/GameState';
@@ -31,6 +31,7 @@ const mono = (size: number, fill: number, align: 'left' | 'center' = 'center') =
  * weapon and ammo, the interact prompt and toasts, a minimap of explored rooms, and the death screen.
  */
 export class HudSystem implements System {
+  onAbilityStatus: ((text: string, ready: boolean, active: boolean) => void) | null = null;
   /** Current floor, for the minimap; set by the LevelManager. */
   level: Level | null = null;
   private readonly renderer: RenderSystem;
@@ -40,12 +41,14 @@ export class HudSystem implements System {
   private readonly mini = new Graphics();
   private readonly dot = new Graphics();
   private readonly info = new Text({ text: '', style: mono(12, COLORS.cyan, 'left') });
+  private readonly abilityText = new Text({ text: '', style: mono(11, 0xd8e4df, 'left') });
   private readonly weaponText = new Text({ text: '', style: mono(14, COLORS.cyan) });
   private readonly promptText = new Text({ text: '', style: mono(15, COLORS.amber) });
   private readonly toastText = new Text({ text: '', style: mono(16, COLORS.amber) });
   /** Called once when the player's HP reaches zero; the UI shows the game-over screen. */
   onDeath: (() => void) | null = null;
   private width = 1;
+  private height = 1;
   private dead = false;
   private miniLevel: Level | null = null;
   private miniVersion = -1;
@@ -60,10 +63,11 @@ export class HudSystem implements System {
 
   init(): void {
     this.info.position.set(8, 52);
+    this.abilityText.position.set(8, 108);
     this.weaponText.anchor.set(0.5, 1);
     this.promptText.anchor.set(0.5, 1);
     this.toastText.anchor.set(0.5, 0);
-    this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText);
+    this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText, this.abilityText);
   }
 
   /** Blanks the HUD for a new run: nothing from the last one (death flag, minimap cache, texts) survives. */
@@ -76,10 +80,12 @@ export class HudSystem implements System {
     this.mini.clear();
     this.dot.clear();
     this.info.text = this.weaponText.text = this.promptText.text = this.toastText.text = '';
+    this.abilityText.text = '';
   }
 
   resize(width: number, height: number): void {
     this.width = width;
+    this.height = height;
     this.mini.position.set(width - MINIMAP_SIZE - MINIMAP_MARGIN, MINIMAP_MARGIN);
     this.weaponText.position.set(width / 2, height - 14);
     this.promptText.position.set(width / 2, height - 100);
@@ -87,6 +93,8 @@ export class HudSystem implements System {
   }
 
   render(world: World, _alpha: number, frameDt: number): void {
+    this.weaponText.y = this.height - (this.state.touch ? 94 : 14);
+    this.promptText.y = this.height - (this.state.touch ? 170 : 100);
     this.state.tick(frameDt);
     this.miniTimer += frameDt;
     let drawn = false;
@@ -94,9 +102,25 @@ export class HudSystem implements System {
       if (drawn || team.team !== 'PLAYER') return;
       drawn = true;
       this.draw(health, inv, syn.passives.length);
+      this.drawAbility(world.get(_entity, 'character'), health);
       this.drawMinimap(t.x, t.y);
     });
     this.drawOverlays(health0(world));
+  }
+
+  private drawAbility(c: CharacterComponent | undefined, h: HealthComponent): void {
+    if (!c) return;
+    const a = c.def.ability;
+    const active = c.activeRemaining > 0 && h.hp > 0;
+    const ready = c.cooldownRemaining === 0 && h.hp > 0;
+    const status = h.hp <= 0 ? 'SIN SEÑAL' : active ? `ACTIVA · ${c.activeRemaining.toFixed(1)} s` : ready ? 'LISTA' : `RECARGA · ${c.cooldownRemaining.toFixed(1)} s`;
+    const key = this.state.touch ? 'SKILL' : 'F';
+    this.abilityText.text = `${c.def.name} / [${key}] ${a.name}\n${status}${(h.temporaryShield ?? 0) > 0 ? ` · +${Math.ceil(h.temporaryShield!)} ESCUDO` : ''}`;
+    this.abilityText.style.fill = c.def.color;
+    const progress = active ? c.activeRemaining / a.duration : 1 - c.cooldownRemaining / a.cooldown;
+    this.bars.roundRect(8, 96, 166, 4, 1).fill({ color: c.def.color, alpha: 0.15 });
+    if (progress > 0) this.bars.roundRect(8, 96, Math.max(1, 166 * progress), 4, 1).fill({ color: c.def.color, alpha: ready ? 1 : 0.65 });
+    this.onAbilityStatus?.(h.hp <= 0 ? 'SKILL\n—' : active ? `ACTIVA\n${Math.ceil(c.activeRemaining)}s` : ready ? 'SKILL' : `SKILL\n${Math.ceil(c.cooldownRemaining)}s`, ready, active);
   }
 
   private draw(health: HealthComponent, inv: WeaponInventoryComponent, implants: number): void {

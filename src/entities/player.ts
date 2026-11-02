@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { CharacterDef } from '../characters/characters';
-import { createWeaponInventory, type WeaponId } from '../combat/weapons';
+import { OperativeGraphic } from '../characters/OperativeGraphic';
+import { WEAPONS, createWeaponInventory, type WeaponId } from '../combat/weapons';
 import { PLAYER_COLLIDER_HALF } from '../config';
 import {
   createHealth,
@@ -33,10 +34,13 @@ export function createPlayer(world: World, render: RenderSystem, x: number, y: n
   const synergy = createPassiveSynergy();
   if (def.passive) addImplant(synergy, def.passive);
   const weapons: WeaponId[] = def.weapon === SIDEARM ? [SIDEARM] : [def.weapon, SIDEARM];
+  const locomotion = createLocomotion();
+  locomotion.runSpeed *= def.moveSpeed;
   world
     .add(player, 'transform', createTransform(x, y))
+    .add(player, 'character', { def, activeRemaining: 0, cooldownRemaining: 0, activationFlash: 0, recoil: 0, trailTimer: 0 })
     .add(player, 'intent', createIntent())
-    .add(player, 'locomotion', createLocomotion())
+    .add(player, 'locomotion', locomotion)
     .add(player, 'health', createHealth(def.hp, def.shield))
     .add(player, 'noiseEmitter', createNoiseEmitter())
     .add(player, 'passiveSynergy', synergy)
@@ -45,6 +49,6 @@ export function createPlayer(world: World, render: RenderSystem, x: number, y: n
     .add(player, 'team', { team: 'PLAYER' })
     .add(player, 'collider', { halfSize: PLAYER_COLLIDER_HALF })
     .add(player, 'playerControlled', {});
-  render.attach(world, player, 'entities', createOperativeGraphic(def.color));
+  render.attach(world, player, 'entities', new OperativeGraphic(def, WEAPONS[def.weapon].type));
   return player;
 }

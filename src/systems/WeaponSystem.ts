@@ -1,4 +1,6 @@
 import type { SoundManager } from '../audio/SoundManager';
+import { endAbility } from '../characters/abilities';
+import { weaponMuzzle } from '../characters/weaponPose';
 import { COLORS, MUZZLE_OFFSET, NOISE_PROFILE_MULT } from '../config';
 import type { Team, TransformComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
@@ -78,14 +80,21 @@ export class WeaponSystem implements System {
 
   private fire(world: World, entity: Entity, t: TransformComponent, w: WeaponDefinition, inv: WeaponInventoryComponent, team: Team): void {
     const stats = world.get(entity, 'passiveSynergy')?.stats;
-    const color = team === 'PLAYER' ? COLORS.cyan : COLORS.red;
-    const mx = t.x + Math.cos(t.angle) * MUZZLE_OFFSET;
-    const my = t.y + Math.sin(t.angle) * MUZZLE_OFFSET;
+    const character = world.get(entity, 'character');
+    const color = team === 'PLAYER' ? character?.def.color ?? COLORS.cyan : COLORS.red;
+    const muzzle = character ? weaponMuzzle(w.type) : { x: MUZZLE_OFFSET, y: 0 };
+    const mx = t.x + Math.cos(t.angle) * muzzle.x - Math.sin(t.angle) * muzzle.y;
+    const my = t.y + Math.sin(t.angle) * muzzle.x + Math.cos(t.angle) * muzzle.y;
+    if (character) {
+      character.recoil = 1;
+      const health = world.get(entity, 'health');
+      if (health && character.def.ability.kind === 'GHOST_STEP') endAbility(character, health);
+    }
 
     inv.magazine[inv.activeSlot]--;
     inv.fireCooldown = 1 / (w.fireRate * (stats?.fireRateMult ?? 1));
 
-    const mult = NOISE_PROFILE_MULT[w.noiseProfile];
+    const mult = NOISE_PROFILE_MULT[w.noiseProfile] * (w.noiseScale ?? 1);
     if (mult > 0) this.field.emit('SHOOT', t.x, t.y, entity, mult * (stats?.noiseDampingMult ?? 1));
     this.audio.playLaserShoot(w.type, t);
 
@@ -111,6 +120,8 @@ export class WeaponSystem implements System {
         piercing: w.specialAttributes?.piercing ?? false,
         explosive: w.noiseProfile === 'EXPLOSIVE',
         bounces,
+        range: w.range,
+        color,
       });
     }
   }

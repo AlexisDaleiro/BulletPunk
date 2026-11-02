@@ -3,6 +3,22 @@ import type { WeaponDefinition } from '../types';
 
 /** The arsenal. Fire rate is rounds/s, spread is the total cone in radians, speed is px/s. */
 export const WEAPONS = {
+  HUSH_SMG: {
+    id: 'HUSH_SMG', name: 'HUSH / SUBFUSIL', type: 'SMG',
+    damagePerPellet: 8, pelletCount: 1, spreadAngle: 0.08, fireRate: 10,
+    magazineSize: 28, reloadTime: 1.5, projectileSpeed: 800, range: 340, noiseProfile: 'MODERATE', noiseScale: 0.35,
+  },
+  BREACH_SHOTGUN: {
+    id: 'BREACH_SHOTGUN', name: 'FORJA / ESCOPETA', type: 'SHOTGUN',
+    damagePerPellet: 8, pelletCount: 7, spreadAngle: 0.38, fireRate: 1.2,
+    magazineSize: 5, reloadTime: 2.1, projectileSpeed: 660, range: 280, noiseProfile: 'LOUD',
+  },
+  LANCE_RIFLE: {
+    id: 'LANCE_RIFLE', name: 'AGUJA / RIFLE EM', type: 'RAILGUN',
+    damagePerPellet: 65, pelletCount: 1, spreadAngle: 0.01, fireRate: 0.7,
+    magazineSize: 4, reloadTime: 2.4, projectileSpeed: 1600, range: 760, noiseProfile: 'LOUD',
+    specialAttributes: { piercing: true },
+  },
   PLASMA_PISTOL: {
     id: 'PLASMA_PISTOL',
     name: 'PLASMA PISTOL',

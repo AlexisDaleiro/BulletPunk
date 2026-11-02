@@ -15,6 +15,7 @@ const CONTROLS: readonly [string, string][] = [
   ['FIRE', 'LEFT CLICK'],
   ['RELOAD', 'R'],
   ['DASH', 'SPACE / SHIFT'],
+  ['ABILITY', 'F / SKILL (TOUCH)'],
   ['INTERACT', 'E'],
   ['SWAP WEAPON', 'Q'],
   ['SNEAK', 'HOLD C'],

@@ -27,6 +27,7 @@ export class HealthSystem implements System {
   update(world: World, dt: number): void {
     world.each(['health'], (entity, h) => {
       h.invulnerableTimer = Math.max(0, h.invulnerableTimer - dt);
+      h.hitFlash = Math.max(0, (h.hitFlash ?? 0) - dt);
       if (h.hp > 0) {
         const regen = world.get(entity, 'passiveSynergy')?.stats.shieldRegenRate ?? 0;
         if (regen > 0) h.shield = Math.min(h.maxShield, h.shield + regen * dt);
@@ -47,6 +48,7 @@ export class HealthSystem implements System {
     if (intent) {
       intent.moveX = intent.moveY = 0;
       intent.wantsFire = intent.wantsReload = intent.wantsDash = intent.wantsInteract = intent.wantsSwap = false;
+      intent.wantsAbility = false;
     }
     const r = world.get(entity, 'renderable');
     if (r) r.node.alpha = 0.35;

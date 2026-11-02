@@ -54,6 +54,19 @@ test('walls block sight: nothing behind a pillar, still lit beside it', () => {
   assert.ok(at(4.5 * T, -1.5 * T), 'beside the pillar: inside the cone, outside its shadow');
 });
 
+test('extended optical sweep reveals farther ahead but never through walls or behind the operative', () => {
+  const { segments, eye } = hall();
+  const base = view(eye, Math.PI / 2);
+  base.range *= 1.1; // Vector's innate telemetry
+  const ordinary = computeVisibility(segments, base);
+  const extended = computeVisibility(segments, { ...base, range: base.range * 1.45 });
+  assert.ok(!pointInPolygon(ordinary, eye.x, eye.y + 550));
+  assert.ok(pointInPolygon(extended, eye.x, eye.y + 550));
+  assert.ok(!pointInPolygon(extended, eye.x, eye.y - 150));
+  const facingWall = computeVisibility(segments, { ...base, angle: 0, range: base.range * 1.45 });
+  assert.ok(!pointInPolygon(facingWall, eye.x + 4.5 * T, eye.y));
+});
+
 test('polygon never leaves the hall, even from a corner', () => {
   const { segments } = hall();
   const poly = computeVisibility(segments, view({ x: 2.5 * T, y: 2.5 * T }, Math.PI * 1.25)); // facing the corner

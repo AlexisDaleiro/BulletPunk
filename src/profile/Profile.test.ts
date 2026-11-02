@@ -48,7 +48,7 @@ test('sanitizeProfile repairs bad fields and drops junk keys', () => {
     runsByCharacter: { GHOST: 2.7, 'bad key': 3, BREACHER: -1, VANGUARD: 0.4 },
   });
   assert.equal(p.name, 'OPERATIVE');
-  assert.equal(p.lastCharacter, 'VANGUARD');
+  assert.equal(p.lastCharacter, 'NIX');
   assert.deepEqual(p.stats, { runs: 0, bestFloor: 3, totalTimeSec: 0, maxCredits: 50, kills: 0 });
   assert.deepEqual(p.runsByCharacter, { GHOST: 2 });
   assert.deepEqual(sanitizeProfile('corrupt'), defaultProfile());

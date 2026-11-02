@@ -1,5 +1,6 @@
 import type { SoundManager } from '../audio/SoundManager';
 import { RUN_RIPPLE_INTERVAL } from '../config';
+import { abilityModifiers } from '../characters/abilities';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
 import type { NoiseField } from '../noise/NoiseField';
@@ -23,7 +24,8 @@ export class NoiseEmitterSystem implements System {
       emitter.movementAccumulator += dt;
       if (emitter.movementAccumulator < RUN_RIPPLE_INTERVAL) return;
       emitter.movementAccumulator -= RUN_RIPPLE_INTERVAL;
-      const damping = world.get(entity, 'passiveSynergy')?.stats.noiseDampingMult ?? 1;
+      const stats = world.get(entity, 'passiveSynergy')?.stats;
+      const damping = (stats?.noiseDampingMult ?? 1) * (stats?.movementNoiseMult ?? 1) * abilityModifiers(world.get(entity, 'character')).movementNoiseMult;
       this.field.emit('RUN', t.x, t.y, entity, damping);
       this.audio.playFootstep('METAL', t); // the same step you can see as a ripple, you can hear
     });

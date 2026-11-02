@@ -1,4 +1,5 @@
 import type { System } from '../ecs/System';
+import { abilityModifiers } from '../characters/abilities';
 import type { World } from '../ecs/World';
 import { computeVisibility } from '../vision/visibility';
 import type { Segment } from '../world/wallEdges';
@@ -14,6 +15,7 @@ export class VisionRaycastSystem implements System {
   update(world: World): void {
     world.each(['playerControlled', 'transform', 'vision'], (entity, _tag, t, vision) => {
       const stats = world.get(entity, 'passiveSynergy')?.stats;
+      vision.effectiveRange = vision.range * (stats?.visionRangeMult ?? 1) * abilityModifiers(world.get(entity, 'character')).visionMult;
       computeVisibility(
         this.segments,
         {
@@ -21,7 +23,7 @@ export class VisionRaycastSystem implements System {
           y: t.y,
           angle: t.angle,
           fov: vision.fov + (stats?.visionAngleBonus ?? 0),
-          range: vision.range * (stats?.visionRangeMult ?? 1),
+          range: vision.effectiveRange,
           proximity: vision.proximityRadius,
         },
         vision.polygon,

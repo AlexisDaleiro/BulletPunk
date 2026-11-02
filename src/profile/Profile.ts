@@ -1,11 +1,11 @@
 import { readJson, removeKey, writeJson, type KV } from '../core/storage.ts';
+import { DEFAULT_CHARACTER_ID } from '../characters/characters.ts';
 
 export const PROFILE_KEY = 'bulletpunk.profile';
 export const PROFILE_VERSION = 1;
 export const NAME_MAX = 16;
 const NAME_PATTERN = /^[A-Za-z0-9 _-]+$/;
 const ID_PATTERN = /^[A-Z][A-Z0-9_]{0,23}$/;
-const DEFAULT_CHARACTER = 'VANGUARD';
 
 export interface ProfileStats {
   runs: number;
@@ -38,7 +38,7 @@ export function defaultProfile(): Profile {
   return {
     version: PROFILE_VERSION,
     name: 'OPERATIVE',
-    lastCharacter: DEFAULT_CHARACTER,
+    lastCharacter: DEFAULT_CHARACTER_ID,
     stats: { runs: 0, bestFloor: 0, totalTimeSec: 0, maxCredits: 0, kills: 0 },
     runsByCharacter: {},
   };
