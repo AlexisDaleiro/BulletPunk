@@ -82,6 +82,7 @@ export class RunController implements System {
     this.over = false;
     this.recorded = false;
     this.active = true;
+    this.deps.state.touch = this.deps.input.inputMode === 'touch';
     levels.start(character, seed);
     game.app.canvas.style.visibility = 'visible';
     this.setMenuOpen(false);

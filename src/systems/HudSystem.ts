@@ -67,6 +67,7 @@ export class HudSystem implements System {
     this.weaponText.anchor.set(0.5, 1);
     this.promptText.anchor.set(0.5, 1);
     this.toastText.anchor.set(0.5, 0);
+    this.toastText.style.wordWrap = true;
     this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText, this.abilityText);
   }
 
@@ -90,9 +91,12 @@ export class HudSystem implements System {
     this.weaponText.position.set(width / 2, height - 14);
     this.promptText.position.set(width / 2, height - 100);
     this.toastText.position.set(width / 2, 64);
+    this.toastText.style.wordWrapWidth = Math.max(150, Math.min(680, width - 360));
   }
 
   render(world: World, _alpha: number, frameDt: number): void {
+    const toastSize = this.state.touch ? 11 : 14;
+    if (this.toastText.style.fontSize !== toastSize) this.toastText.style.fontSize = toastSize;
     this.weaponText.y = this.height - (this.state.touch ? 94 : 14);
     this.promptText.y = this.height - (this.state.touch ? 170 : 100);
     this.state.tick(frameDt);

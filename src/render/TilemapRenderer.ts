@@ -6,6 +6,7 @@ import type { Door } from '../world/locks';
 import type { Decor } from '../world/plan';
 import type { TileMap } from '../world/TileMap';
 import { drawTileObject, shade, WALL_PAL, type ObjCtx } from './tileObjects';
+import { sectorAtmosphere } from './sectorAtmosphere';
 
 const T = TILE_SIZE;
 const AMBER = 0xffe600;
@@ -421,6 +422,16 @@ export class TilemapView {
       s.alpha = l.alpha;
       s.blendMode = 'add';
       lights.addChild(s);
+      // A narrow reflection gives the light a wet material response with no post-process pass.
+      const reflection = new Sprite(tex);
+      reflection.anchor.set(.5);
+      reflection.position.set(l.x + l.r * .12, l.y + l.r * .32);
+      reflection.width = l.r * .95;
+      reflection.height = l.r * .13;
+      reflection.tint = l.color;
+      reflection.alpha = l.alpha * .3;
+      reflection.blendMode = 'add';
+      lights.addChild(reflection);
       if (l.flicker) this.flicker.push({ sprite: s, base: l.alpha, phase: Math.random() * 10, speed: 5 + Math.random() * 9 });
     }
     // Terminals get a small steady glow of their own.
@@ -428,7 +439,7 @@ export class TilemapView {
 
     this.objectLayer = new Container();
     this.root = new Container();
-    this.root.addChild(drawFloor(d.map, grids), decor.floor, drawWalls(d.map, grids), this.objectLayer, decor.wall, decor.neon, lights);
+    this.root.addChild(drawFloor(d.map, grids), sectorAtmosphere(d), decor.floor, drawWalls(d.map, grids), this.objectLayer, decor.wall, decor.neon, lights);
     this.parent.addChild(this.root);
 
     for (let ty = 0; ty < d.map.height; ty++) for (let tx = 0; tx < d.map.width; tx++) this.draw(tx, ty);

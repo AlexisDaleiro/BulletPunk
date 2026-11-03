@@ -13,9 +13,9 @@ export const VIEW_SPAN = 720;
 
 export const COLORS = {
   background: 0x05060a,
-  cyan: 0x00e5ff,
-  red: 0xff0055,
-  amber: 0xffe600,
+  cyan: 0x91d8d0,
+  red: 0xf47680,
+  amber: 0xf6bf69,
   grid: 0x10202e,
 } as const;
 

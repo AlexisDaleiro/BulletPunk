@@ -1,6 +1,7 @@
 import { getCharacter } from '../../characters/characters';
 import { button, el } from '../dom';
 import type { UiContext } from '../UI';
+import { cinematicBackdrop } from '../splash';
 
 export function titleScreen(ctx: UiContext): HTMLElement {
   const { run, profile } = ctx;
@@ -10,7 +11,7 @@ export function titleScreen(ctx: UiContext): HTMLElement {
   if (resumable) {
     menu.append(
       button(
-        'CONTINUE',
+        'CONTINUAR',
         () => {
           ctx.close();
           run.setMenuOpen(false);
@@ -21,24 +22,34 @@ export function titleScreen(ctx: UiContext): HTMLElement {
   }
   menu.append(
     button(
-      'PLAY',
+      'JUGAR',
       () => {
         ctx.go('character');
       },
       resumable ? '' : 'primary',
     ),
-    button('OPERATIVE', () => ctx.go('character')),
-    button('PROFILE', () => ctx.go('profile')),
-    button('OPTIONS', () => ctx.go('options')),
+    button('OPERATIVOS', () => ctx.go('character')),
+    button('PERFIL', () => ctx.go('profile')),
+    button('OPCIONES', () => ctx.go('options')),
   );
+  menu.querySelectorAll<HTMLButtonElement>('button').forEach((item, index) => {
+    item.setAttribute('aria-label', item.textContent ?? '');
+    item.dataset.index = `0${index + 1}`;
+    item.classList.add('menu-action');
+  });
   menu.querySelector('button')?.setAttribute('data-autofocus', '');
 
   const logo = el(
     'div',
     'logo',
-    el('h1', '', 'BULLETPUNK'),
+    el('span', 'title-kicker', 'TRANSMISIÓN CIFRADA / SECTOR 09'),
+    el('h1', '', el('span', '', 'BULLET'), el('span', '', 'PUNK')),
     el('p', 'tagline', 'PROTOCOL ZERO'),
     el('p', 'meta', `${profile.value.name} · ${getCharacter(profile.value.lastCharacter).name}`),
   );
-  return el('div', 'panel title', logo, menu);
+  return el('div', 'panel title', cinematicBackdrop(),
+    el('div', 'title-layout', logo, el('p', 'title-intro', 'Entra en las sombras. Sal como una leyenda.'), menu),
+    el('div', 'title-status', el('span', 'status-signal', 'CANAL SEGURO'), el('span', '', 'INFILTRACIÓN / EXTRACCIÓN / SUPERVIVENCIA')),
+    el('div', 'title-scene-label', el('span', '', 'DISTRITO INDUSTRIAL'), el('strong', '', 'LA CIUDAD NO DUERME.')),
+  );
 }

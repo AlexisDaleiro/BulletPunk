@@ -1,7 +1,7 @@
 import { CHARACTERS, getCharacter } from '../../characters/characters';
 import { WEAPONS } from '../../combat/weapons';
 import { button, el } from '../dom';
-import { operativePreview } from '../preview';
+import { cinematicBackdrop, operativeSplash } from '../splash';
 import type { UiContext } from '../UI';
 
 const hex = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
@@ -15,58 +15,59 @@ export function characterScreen(ctx: UiContext): HTMLElement {
   const deploy = button('', () => {
     ctx.close();
     ctx.run.startRun(getCharacter(profile.value.lastCharacter).id, ctx.takeSeed());
-  }, 'primary');
+  }, 'primary deploy-action');
   const selected = el('span', 'selection-label');
 
   const refresh = (): void => {
     const def = getCharacter(profile.value.lastCharacter);
     for (const [id, b] of buttons) b.setAttribute('aria-pressed', String(id === def.id));
-    deploy.textContent = `DESPLEGAR A ${def.name} →`;
-    selected.textContent = `${def.name} / ${def.role}`;
+    deploy.textContent = `DESPLEGAR A ${def.name} ↗`;
+    selected.textContent = `${def.name} / LISTO PARA DESPLIEGUE`;
     briefing.style.setProperty('--c', hex(def.color));
-    const preview = operativePreview(ctx.renderer, def);
-    preview.className = 'briefing-preview';
     briefing.replaceChildren(
-      el('span', 'card-role', def.role), preview,
-      el('strong', 'briefing-name', def.name), el('p', 'briefing-description', def.description),
-      el('span', 'card-stat', `VIDA ${def.hp} · ESCUDO ${def.shield} · VEL ${Math.round(def.moveSpeed * 100)}%`),
-      el('span', 'card-stat', WEAPONS[def.weapon].name),
-      el('strong', 'card-ability', def.ability.name), el('p', 'briefing-description', def.ability.description),
-      el('span', 'card-timing', `${def.ability.duration} s activa / ${def.ability.cooldown} s recarga`),
-      el('p', 'briefing-passive', `${def.passive.name}: ${def.passive.description}`),
-      el('span', 'card-weakness', def.weakness),
+      operativeSplash(def, 'briefing-splash'), el('div', 'briefing-shade'),
+      el('div', 'briefing-content',
+        el('span', 'card-role', `OPERATIVO / ${def.role}`), el('strong', 'briefing-name', def.name),
+        el('p', 'briefing-description', def.description),
+        el('div', 'dossier-stats',
+          el('span', '', el('b', '', String(def.hp)), 'VIDA'),
+          el('span', '', el('b', '', String(def.shield)), 'ESCUDO'),
+          el('span', '', el('b', '', `${Math.round(def.moveSpeed * 100)}%`), 'VELOCIDAD'),
+        ),
+        el('span', 'briefing-weapon', WEAPONS[def.weapon].name),
+        el('strong', 'card-ability', def.ability.name),
+        el('p', 'ability-description', def.ability.description),
+        el('span', 'card-timing', `${def.ability.duration} s activa / ${def.ability.cooldown} s recarga`),
+        el('p', 'briefing-passive', `${def.passive.name}: ${def.passive.description}`),
+        el('span', 'card-weakness', def.weakness),
+      ),
     );
   };
 
-  for (const def of CHARACTERS) {
-    const preview = operativePreview(ctx.renderer, def);
-    preview.className = 'card-preview';
-    const card = el(
-      'button',
-      'card',
-      el('span', 'card-role', `0${CHARACTERS.indexOf(def) + 1} / ${def.role}`),
-      preview,
-      el('strong', 'card-name', def.name),
-      el('span', 'card-stat', `VIDA ${def.hp} · ESCUDO ${def.shield}`),
-      el('span', 'card-stat', WEAPONS[def.weapon].name),
-      el('span', 'card-ability', def.ability.name),
+  for (const [index, def] of CHARACTERS.entries()) {
+    const card = el('button', 'card', operativeSplash(def, 'card-splash', true),
+      el('span', 'card-number', `0${index + 1}`), el('span', 'card-selection', '↗'),
+      el('div', 'card-caption', el('span', 'card-role', def.role), el('strong', 'card-name', def.name)),
     );
     card.type = 'button';
     card.style.setProperty('--c', hex(def.color));
-    card.addEventListener('click', () => {
-      profile.setLastCharacter(def.id);
-      refresh();
-    });
+    card.setAttribute('aria-label', `${def.name}, ${def.role.toLowerCase()}`);
+    card.addEventListener('click', () => { profile.setLastCharacter(def.id); refresh(); });
     buttons.set(def.id, card);
     cards.append(card);
   }
   refresh();
   buttons.get(getCharacter(profile.value.lastCharacter).id)?.setAttribute('data-autofocus', '');
 
-  return el('div', 'panel operative-select',
-    el('div', 'roster-header', el('span', 'roster-kicker', 'BULLETPUNK / PROTOCOLO DE DESPLIEGUE'), el('h2', 'roster-title', 'Elige tu operativo'), el('p', 'roster-subtitle', 'Seis formas de entrar. Una salida.')),
-    el('div', 'roster-shell', cards, briefing),
-    el('div', 'roster-footer', button('VOLVER', ctx.back), selected, deploy),
-    el('p', 'roster-controls', 'WASD mover · Ratón apuntar · F habilidad · Espacio dash · Q cambiar arma'),
+  return el('div', 'panel operative-select', cinematicBackdrop(),
+    el('div', 'roster-header',
+      el('div', '', el('span', 'roster-kicker', 'EL EQUIPO / PROTOCOLO ZERO'), el('h2', 'roster-title', 'Elige tu operativo')),
+      el('p', 'roster-subtitle', 'Seis formas de entrar. Una salida.'),
+    ),
+    el('div', 'roster-shell', briefing, el('section', 'roster-grid', el('span', 'roster-grid-label', 'SELECCIONA TU ESTILO DE COMBATE'), cards)),
+    el('div', 'roster-footer', button('← VOLVER', ctx.back), selected, deploy),
+    el('p', 'roster-controls', window.matchMedia('(pointer: coarse)').matches
+      ? 'IZQUIERDA mover · DESLIZA EN LA MITAD DERECHA para girar · CONO ROJO disparo automático'
+      : 'WASD mover · Ratón apuntar · F habilidad · Espacio dash · Q cambiar arma'),
   );
 }

@@ -14,10 +14,10 @@ export class VisionConeGraphic extends Container {
     canvas.width = canvas.height = 256;
     const ctx = canvas.getContext('2d')!;
     const gradient = ctx.createRadialGradient(128, 128, 8, 128, 128, 128);
-    gradient.addColorStop(0, 'rgba(255,240,201,0.21)');
-    gradient.addColorStop(0.55, 'rgba(255,240,201,0.10)');
-    gradient.addColorStop(0.95, 'rgba(255,240,201,0.045)');
-    gradient.addColorStop(1, 'rgba(255,240,201,0)');
+    gradient.addColorStop(0, 'rgba(237,228,191,0.13)');
+    gradient.addColorStop(0.4, 'rgba(147,205,191,0.075)');
+    gradient.addColorStop(0.85, 'rgba(99,153,172,0.035)');
+    gradient.addColorStop(1, 'rgba(99,153,172,0)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 256, 256);
     this.light = new Sprite(Texture.from(canvas));
@@ -35,6 +35,6 @@ export class VisionConeGraphic extends Container {
     this.light.position.set(x - range, y - range);
     this.light.width = this.light.height = range * 2;
     this.clip.poly(fan).fill(0xffffff);
-    this.contour.poly(fan).fill({ color: 0xffebc2, alpha: 0.018 }).stroke({ color: 0xe9e4c8, alpha: 0.24, width: 0.9 });
+    this.contour.poly(fan).fill({ color: 0xa3d1c2, alpha: 0.008 }).stroke({ color: 0xa3c9bc, alpha: 0.13, width: 0.8 });
   }
 }

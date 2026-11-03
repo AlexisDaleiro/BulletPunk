@@ -17,6 +17,7 @@ export function spawnFlash(
   const flash = world.create();
   const node = new Graphics().circle(0, 0, radius).fill({ color, alpha: 0.12 })
     .circle(0, 0, radius * 0.55).fill({ color, alpha: 0.35 })
+    .poly([-radius * 1.4, 0, -radius * .18, -radius * .18, 0, -radius * 1.1, radius * .18, -radius * .18, radius * 1.4, 0, radius * .18, radius * .18, 0, radius * 1.1, -radius * .18, radius * .18]).fill({ color, alpha: .42 })
     .circle(0, 0, radius * 0.18).fill(0xffeed1);
   node.blendMode = 'add';
   node.alpha = 0.9;

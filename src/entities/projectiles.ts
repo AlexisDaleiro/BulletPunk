@@ -58,7 +58,12 @@ export class ProjectilePool {
     const heavy = spec.piercing;
     const length = heavy ? 90 : Math.min(60, Math.max(14, spec.speed * 0.05));
     const width = heavy ? 5 : 2.5;
-    node.clear().moveTo(-length, 0).lineTo(0, 0).stroke({ width, color, alpha: 0.85 }).circle(0, 0, width).fill(0xffffff);
+    node.clear()
+      .poly([-length, 0, -length * .25, -width * 1.7, width * 2, 0, -length * .25, width * 1.7]).fill({ color, alpha: .12 })
+      .moveTo(-length * .8, 0).lineTo(0, 0).stroke({ width: width * 3, color, alpha: .09 })
+      .moveTo(-length * .65, 0).lineTo(0, 0).stroke({ width, color, alpha: .75 })
+      .moveTo(-length * .22, 0).lineTo(width, 0).stroke({ width: Math.max(1, width * .45), color: 0xfff5db, alpha: .95 })
+      .circle(0, 0, width * .65).fill(0xffffff);
     node.renderable = true;
     return entity;
   }

@@ -144,7 +144,6 @@ const ui = new UI({
   run,
   settings,
   profile,
-  renderer: game.app.renderer,
   bootAntialias: settings.value.antialias,
   takeSeed: () => {
     const seed = pendingSeed;

@@ -80,6 +80,9 @@ export class InputManager {
     window.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  /** Available before the first simulation step, including while the deployment menu is open. */
+  get inputMode(): InputMode { return this.mode; }
+
   /** Off while a menu is open (also drops held keys and hides the touch buttons); on to play. */
   setActive(active: boolean): void {
     this.active = active;

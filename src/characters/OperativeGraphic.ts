@@ -32,7 +32,8 @@ export class OperativeGraphic extends Container {
     const heavy = def.id === 'BRASA' || def.id === 'MORSA' || def.silhouette === 'HEAVY';
     const scout = def.id === 'VECTOR' || def.silhouette === 'SCOUT';
     const shoulder = heavy ? 13 : scout ? 11 : 9;
-    const shadow = new Graphics().ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.38 });
+    const shadow = new Graphics().ellipse(2, 5, heavy ? 24 : 21, heavy ? 21 : 18).fill({ color: 0x000000, alpha: 0.15 })
+      .ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.45 });
     this.addChild(shadow, this.effect, this.rig);
     this.feet.forEach((foot, i) => {
       foot.roundRect(-15, i ? 3 : -10, 10, 7, 2).fill(INK).stroke({ color: p.metal, width: 0.7 });
@@ -132,6 +133,33 @@ export class OperativeGraphic extends Container {
       body.poly([-4, 13, 5, 11, 8, 16, -2, 19]).fill(p.light).stroke({ color: INK, width: 1.2 });
       body.moveTo(-4, -15).lineTo(0, -12).lineTo(4, -15).stroke({ color: def.color, width: 1.5 });
       body.rect(-15, -6, 3, 12).fill(def.color);
+    }
+    // Character-specific top-down signatures echo their illustrated dossier art.
+    if (!def.hostile) {
+      if (def.id === 'NIX') {
+        body.poly([-1, -8, 6, -10, 10, -6, 5, -4, 1, 1, -2, -2]).fill(0x121e23).stroke({ color: p.metal, width: .7 });
+        body.moveTo(1, -7).lineTo(5, -6).lineTo(7, -3).stroke({ color: def.color, width: 1.4 });
+        body.moveTo(-11, -7).lineTo(-16, -4).lineTo(-14, 7).stroke({ color: def.color, width: .8, alpha: .7 });
+      } else if (def.id === 'BRASA') {
+        body.poly([1, -9, 6, -10, 9, -4, 4, -2]).fill(0xb56c42).stroke({ color: 0xe8b984, width: .7 });
+        body.poly([-5, -20, 4, -19, 7, -15, 4, -8, -4, -10]).fill(0x9b6940).stroke({ color: p.light, width: 1 });
+        for (let i = 0; i < 3; i++) body.rect(-3 + i * 2.4, -17, 1.2, 5).fill({ color: def.color, alpha: .75 });
+      } else if (def.id === 'VECTOR') {
+        body.poly([-7, -10, -25, -14, -22, -4, -9, 0]).fill(0x28383f).stroke({ color: p.metal, width: 1 });
+        body.poly([1, -8, 7, -8, 10, -5, 3, -3]).fill(0xdee0d8);
+        body.circle(11, -6, 2).fill(def.color).stroke({ color: 0xe6dcfa, width: .7 });
+      } else if (def.id === 'SUTURA') {
+        body.ellipse(3, -2, 6, 5).fill(0x50352f).stroke({ color: 0xaf8675, width: .8 });
+        body.roundRect(-14, -7, 3, 5, 1).fill(def.color);
+      } else if (def.id === 'VOLT') {
+        body.poly([0, -8, 5, -10, 10, -7, 8, -4, 3, -3]).fill(0xc0deeb).stroke({ color: def.color, width: 1 });
+        body.moveTo(-13, -5).lineTo(-10, -2).lineTo(-13, 1).lineTo(-9, 5).stroke({ color: def.color, width: 1.3 });
+      } else if (def.id === 'MORSA') {
+        body.roundRect(-11, -15, 3, 9, 1).fill(0xc1ab76).stroke({ color: INK, width: .7 });
+        body.moveTo(-10, -3).lineTo(-7, 2).lineTo(-8, 8).stroke({ color: p.light, width: 1.5 });
+      }
+      // A fine lit edge separates armor from the dark floor at mobile scale.
+      body.moveTo(-6, -shoulder - 3).lineTo(1, -shoulder - 3).stroke({ color: p.light, width: 1.2, alpha: .85 });
     }
     // Small abrasion marks rather than a full neon outline.
     body.moveTo(-2, -11).lineTo(1, -10).moveTo(-6, 4).lineTo(-4, 3).stroke({ color: p.light, width: 0.6, alpha: 0.7 });

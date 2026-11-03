@@ -1,4 +1,3 @@
-import type { Renderer } from 'pixi.js';
 import type { ProfileStore } from '../profile/ProfileStore';
 import type { RunController, RunInfo } from '../run/RunController';
 import type { SettingsStore } from '../settings/SettingsStore';
@@ -10,6 +9,7 @@ import { pauseScreen } from './screens/pause';
 import { profileScreen } from './screens/profile';
 import { titleScreen } from './screens/title';
 import './ui.css';
+import './art-direction.css';
 
 export type ScreenName = 'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover';
 
@@ -17,7 +17,6 @@ export interface UiDeps {
   run: RunController;
   settings: SettingsStore;
   profile: ProfileStore;
-  renderer: Renderer;
   /** The antialias value the renderer actually started with (changing the setting needs a reload). */
   bootAntialias: boolean;
   /** The `?seed=` of the page, handed out once to the first run. */
@@ -141,6 +140,7 @@ export class UI {
 
   private render(name: ScreenName): void {
     this.runCleanups();
+    this.root.dataset.screen = name;
     this.root.replaceChildren(SCREENS[name](this.ctx));
     this.root.classList.add('open');
     this.current = name;
