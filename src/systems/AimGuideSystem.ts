@@ -28,7 +28,7 @@ export class AimGuideSystem implements System {
         if (cone) this.drawCone(map, cone, hasMobileTarget(world, map, entity, cone), inv.reloadTimer > 0);
         return;
       }
-      const trace = traceAim(map, t.x, t.y, t.angle, weapon.type, Math.min(weapon.range ?? BULLET_RANGE, vision.effectiveRange ?? vision.range));
+      const trace = traceAim(map, t.x, t.y, t.angle, weapon, Math.min(weapon.range ?? BULLET_RANGE, vision.effectiveRange ?? vision.range));
       let hit = 1, target = false;
       world.each(['team', 'transform', 'health', 'collider', 'renderable'], (_enemy, team, enemy, h, col, r) => {
         if (team.team !== 'ENEMY' || h.hp <= 0 || !r.node.visible) return;

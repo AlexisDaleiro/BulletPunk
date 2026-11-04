@@ -14,8 +14,8 @@ export interface InputState {
   hasPointer: boolean;
   pointerX: number;
   pointerY: number;
-  /** Touch: accumulated horizontal swipe rotation since the last simulation step. */
-  aimTurn: number;
+  /** Touch: a deliberate direction from the floating right-hand pad, sampled once. */
+  aimDirection: { x: number; y: number } | null;
   fire: boolean;
   /** One-shot actions: true for exactly one poll per press. */
   dash: boolean;
@@ -56,7 +56,7 @@ export class InputManager {
     hasPointer: false,
     pointerX: 0,
     pointerY: 0,
-    aimTurn: 0,
+    aimDirection: null,
     fire: false,
     dash: false,
     reload: false,
@@ -124,7 +124,7 @@ export class InputManager {
     s.hasPointer = this.hasPointer;
     s.pointerX = this.pointerX;
     s.pointerY = this.pointerY;
-    s.aimTurn = 0;
+    s.aimDirection = null;
     s.fire = this.mouseDown || this.firePressed;
     this.firePressed = false;
   }
@@ -138,7 +138,7 @@ export class InputManager {
     s.moveY = move.y * k;
     s.hasPointer = false;
 
-    s.aimTurn = aim.takeTurn();
+    s.aimDirection = aim.takeDirection();
     s.fire = false; // Target detection in WeaponSystem decides when to fire on mobile.
   }
 
@@ -187,7 +187,9 @@ export class InputManager {
   private readonly onPointerDown = (e: PointerEvent): void => {
     if (!this.active) return;
     if (e.pointerType === 'touch') {
+      const switching = this.mode !== 'touch';
       this.setMode('touch');
+      if (switching && e.target instanceof Node && this.host.contains(e.target)) this.touch.beginPointer(e);
       return;
     }
     this.setMode('desktop');

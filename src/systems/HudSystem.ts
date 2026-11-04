@@ -119,7 +119,7 @@ export class HudSystem implements System {
     const ready = c.cooldownRemaining === 0 && h.hp > 0;
     const status = h.hp <= 0 ? 'SIN SEÑAL' : active ? `ACTIVA · ${c.activeRemaining.toFixed(1)} s` : ready ? 'LISTA' : `RECARGA · ${c.cooldownRemaining.toFixed(1)} s`;
     const key = this.state.touch ? 'SKILL' : 'F';
-    this.abilityText.text = `${c.def.name} / [${key}] ${a.name}\n${status}${(h.temporaryShield ?? 0) > 0 ? ` · +${Math.ceil(h.temporaryShield!)} ESCUDO` : ''}`;
+    this.abilityText.text = `${c.def.name} / [${key}] ${a.name}\n${status}${(h.temporaryShield ?? 0) > 0 ? ` · +${Math.ceil(h.temporaryShield!)} ESCUDO` : ''}${c.upgrades?.length ? ` · EVO ${c.upgrades.length}` : ''}`;
     this.abilityText.style.fill = c.def.color;
     const progress = active ? c.activeRemaining / a.duration : 1 - c.cooldownRemaining / a.cooldown;
     this.bars.roundRect(8, 96, 166, 4, 1).fill({ color: c.def.color, alpha: 0.15 });

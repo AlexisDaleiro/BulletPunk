@@ -10,8 +10,10 @@ import { profileScreen } from './screens/profile';
 import { titleScreen } from './screens/title';
 import './ui.css';
 import './art-direction.css';
+import { upgradeScreen } from './screens/upgrade';
+import './progression.css';
 
-export type ScreenName = 'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover';
+export type ScreenName = 'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover' | 'upgrade';
 
 export interface UiDeps {
   run: RunController;
@@ -38,6 +40,7 @@ export interface UiContext extends UiDeps {
 }
 
 const SCREENS: Record<ScreenName, (ctx: UiContext) => HTMLElement> = {
+  upgrade: upgradeScreen,
   title: titleScreen,
   character: characterScreen,
   profile: profileScreen,
@@ -82,6 +85,7 @@ export class UI {
     document.body.append(this.root, this.pauseButton);
 
     deps.run.onChange = () => this.syncPauseButton();
+    deps.run.onUpgrade = () => this.open('upgrade');
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('blur', () => this.openPause());
     document.addEventListener('visibilitychange', () => {

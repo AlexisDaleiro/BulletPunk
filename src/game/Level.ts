@@ -6,6 +6,7 @@ import type { Dungeon } from '../world/DungeonGenerator';
 import type { Door } from '../world/locks';
 import type { SecretPlan } from '../world/plan';
 import { isOpaqueTile, type TileMap } from '../world/TileMap';
+import type { CombatSource } from '../render/LiveScenery';
 
 export interface TileChange {
   x: number;
@@ -48,8 +49,8 @@ export class Level {
   }
 
   /** Per-frame upkeep of the drawn floor (flickering lamps). */
-  tick(dt: number): void {
-    this.view.tick(dt);
+  tick(dt: number, combat: readonly CombatSource[] = []): void {
+    this.view.tick(dt, combat);
   }
 
   setTiles(changes: readonly TileChange[]): void {

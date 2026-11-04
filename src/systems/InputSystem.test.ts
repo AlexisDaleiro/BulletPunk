@@ -13,7 +13,7 @@ test('mobile can strafe without changing aim and uses automatic targeting even w
   world.add(player, 'playerControlled', {}).add(player, 'transform', createTransform(100, 100))
     .add(player, 'intent', createIntent(0.7));
   const sample: InputState = { mode: 'touch', moveX: -1, moveY: 0, hasPointer: false, pointerX: 0, pointerY: 0,
-    aimTurn: 0, fire: false, ability: false, dash: false, reload: false, interact: false, swap: false };
+    aimDirection: null, fire: false, ability: false, dash: false, reload: false, interact: false, swap: false };
   const system = new InputSystem({ poll: () => sample } as InputManager, {} as RenderSystem, new GameState());
   system.update(world);
   const intent = world.get(player, 'intent')!;
@@ -21,13 +21,13 @@ test('mobile can strafe without changing aim and uses automatic targeting even w
   assert.equal(intent.moveX, -1);
   assert.equal(intent.autoFire, true);
   assert.equal(intent.wantsFire, false);
-  sample.aimTurn = 0.3;
+  sample.aimDirection = { x: 0, y: -1 };
   system.update(world);
-  assert.ok(Math.abs(intent.aimAngle - 1) < 1e-10);
-  sample.aimTurn = 0;
+  assert.equal(intent.aimAngle, -Math.PI / 2);
+  sample.aimDirection = null;
   sample.moveX = 0;
   system.update(world);
-  assert.ok(Math.abs(intent.aimAngle - 1) < 1e-10);
+  assert.equal(intent.aimAngle, -Math.PI / 2);
   assert.equal(intent.autoFire, true);
   sample.mode = 'desktop';
   sample.fire = true;

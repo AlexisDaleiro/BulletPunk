@@ -30,6 +30,7 @@ export class HealthSystem implements System {
     world.each(['health'], (entity, h) => {
       h.invulnerableTimer = Math.max(0, h.invulnerableTimer - dt);
       h.hitFlash = Math.max(0, (h.hitFlash ?? 0) - dt);
+      h.shieldBreak = Math.max(0, (h.shieldBreak ?? 0) - dt);
       if (h.hp > 0) {
         const regen = world.get(entity, 'passiveSynergy')?.stats.shieldRegenRate ?? 0;
         if (regen > 0) h.shield = Math.min(h.maxShield, h.shield + regen * dt);
@@ -74,7 +75,7 @@ export class HealthSystem implements System {
         world.add(fallen, 'transform', pose).add(fallen, 'fogged', {})
           .add(fallen, 'particle', { drag: 5, spin: 0.15 })
           .add(fallen, 'lifetime', { age: 0, duration: 3, startAlpha: 0.65 });
-        const node = new OperativeGraphic(visual.appearance, weapon.type, this.renderer.renderer);
+        const node = new OperativeGraphic(visual.appearance, weapon, this.renderer.renderer);
         node.scale.set(1, 0.75);
         node.tint = 0x7c8080;
         this.renderer.attach(world, fallen, 'shadows', node);

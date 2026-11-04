@@ -1,4 +1,5 @@
 import type { WeaponType } from '../types';
+import type { ImpactMaterial } from '../combat/impactMaterial';
 
 export interface SoundPos {
   x: number;
@@ -103,6 +104,20 @@ export class SoundManager {
   /** White-noise burst with a fast exponential decay (0.05 s). */
   playBulletImpact(at?: SoundPos): void {
     this.burst({ dur: 0.05, gain: 0.22, filter: { type: 'bandpass', freq: 2200, q: 1 }, at });
+  }
+
+  playMaterialImpact(material: ImpactMaterial, at?: SoundPos): void {
+    if (material === 'SHIELD') {
+      this.tone({ type: 'sine', from: 1650, to: 900, dur: .08, gain: .1, at });
+    } else {
+      this.burst({ dur: material === 'METAL' ? .065 : .045, gain: .16,
+        filter: { type: 'bandpass', freq: material === 'WOOD' ? 700 : material === 'CONCRETE' ? 1400 : 3600, q: 1.2 }, at });
+    }
+  }
+
+  playShieldBreak(at?: SoundPos): void {
+    this.burst({ dur: .18, gain: .25, filter: { type: 'highpass', freq: 3000 }, at });
+    this.tone({ type: 'triangle', from: 1800, to: 120, dur: .28, gain: .2, at });
   }
 
   /** Low sine thump: 80 Hz for 0.04 s. The grate is a little higher and brighter. */

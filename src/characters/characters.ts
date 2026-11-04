@@ -1,5 +1,6 @@
 import type { WeaponId } from '../combat/weapons.ts';
 import type { CyberwarePassive } from '../types.ts';
+import type { CosmeticLook } from '../profile/cosmetics.ts';
 
 export type CharacterId = 'NIX' | 'BRASA' | 'VECTOR' | 'SUTURA' | 'VOLT' | 'MORSA';
 export interface AbilityDef {
@@ -19,6 +20,7 @@ export interface AbilityDef {
 }
 
 export interface CharacterDef {
+  look?: CosmeticLook;
   id: CharacterId;
   name: string;
   role: string;

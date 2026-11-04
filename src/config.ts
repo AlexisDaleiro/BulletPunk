@@ -183,8 +183,9 @@ export const SNEAK_INPUT = 0.6;
 /** Move scale applied while the sneak key is held. Must stay below SNEAK_INPUT. */
 export const KEY_SNEAK_SCALE = 0.45;
 export const MOVE_DEADZONE = 0.12;
-/** A horizontal swipe across half the screen turns the mobile player 180 degrees. */
-export const TOUCH_TURN_RADIANS = Math.PI * 2;
+/** Right-hand aim pad: a short drag aims in any direction, independently of screen size. */
+export const AIM_PAD_RADIUS = 40;
+export const AIM_PAD_DEADZONE = 8;
 /** Touch joystick travel, CSS px. */
 export const STICK_RADIUS = 56;
 

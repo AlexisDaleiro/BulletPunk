@@ -57,7 +57,7 @@ export class EnvironmentSystem implements System {
     const level = this.level;
     if (!level) return;
     if (level !== this.hooked) this.hook(level);
-    level.tick(dt);
+    level.tick(dt, this.field.events.filter(e => e.kind === 'SHOOT' && e.intensity > .4));
 
     world.each(['chest', 'renderable'], (_e, c, r) => {
       if (c.state === 'OPENING') {

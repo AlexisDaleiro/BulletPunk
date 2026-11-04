@@ -2,7 +2,7 @@ import { Container, Graphics, Text, type Renderer } from 'pixi.js';
 import { OperativeGraphic } from './OperativeGraphic';
 import type { EnemyAppearance } from './enemyAppearances';
 import type { AIState, HealthComponent } from '../ecs/components';
-import type { WeaponType } from '../types';
+import type { WeaponDefinition } from '../types';
 
 export class HostileGraphic extends OperativeGraphic {
   private readonly status = new Container();
@@ -10,7 +10,7 @@ export class HostileGraphic extends OperativeGraphic {
   private readonly mark = new Text({ text: '', style: { fontFamily: 'monospace', fontSize: 10, fontWeight: 'bold', fill: 0xffc0a0, stroke: { color: 0x111922, width: 3 } } });
   private readonly appearance: EnemyAppearance;
 
-  constructor(appearance: EnemyAppearance, weapon: WeaponType, renderer: Renderer) {
+  constructor(appearance: EnemyAppearance, weapon: WeaponDefinition, renderer: Renderer) {
     super(appearance, weapon, renderer);
     this.appearance = appearance;
     this.mark.anchor.set(0.5, 1);

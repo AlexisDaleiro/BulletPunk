@@ -1,5 +1,5 @@
-import { STICK_RADIUS } from '../config';
-import { SwipeAim } from './SwipeAim';
+import { AIM_PAD_RADIUS, STICK_RADIUS } from '../config';
+import { AimPad } from './AimPad';
 import './touch.css';
 
 /** One-shot button presses. Shared with InputManager, which latches keyboard presses into it too. */
@@ -69,20 +69,29 @@ class Stick {
 }
 
 /**
- * DOM overlay for touch play: floating move stick (left half), swipe to rotate (right half),
+ * DOM overlay for touch play: floating move stick (left half), directional aim pad (right half),
  * and Dash / Reload / Interact / Skill buttons. Hidden unless input is in touch mode.
  */
 export class TouchControls {
   readonly move = new Stick('stick-base');
-  readonly aim = new SwipeAim();
+  readonly aim = new AimPad();
   private readonly root = div('touch-ui');
+  private readonly actions = div('touch-actions');
+  private readonly aimBase = div('aim-pad');
+  private readonly aimKnob = div('aim-pad-knob');
+  private visible = false;
   private readonly edges: ActionEdges;
   private readonly abilityButton: HTMLButtonElement;
 
   constructor(host: HTMLElement, edges: ActionEdges) {
     this.edges = edges;
     this.root.style.setProperty('--stick-r', `${STICK_RADIUS}px`);
-    this.root.append(this.move.base);
+    this.root.style.setProperty('--aim-r', `${AIM_PAD_RADIUS}px`);
+    this.aimBase.append(this.aimKnob);
+    this.aimBase.setAttribute('aria-hidden', 'true');
+    this.actions.setAttribute('role', 'group');
+    this.actions.setAttribute('aria-label', 'Acciones del operativo');
+    this.root.append(this.move.base, this.aimBase, this.actions);
     this.addButton('SWAP', 'swap', 'swap');
     this.addButton('RELOAD', 'reload', 'reload');
     this.addButton('HACK', 'interact', 'interact');
@@ -90,25 +99,21 @@ export class TouchControls {
     this.abilityButton = this.addButton('SKILL', 'ability', 'ability');
     this.abilityButton.setAttribute('aria-label', 'Activar habilidad');
 
-    this.root.addEventListener('pointerdown', (e) => {
-      const left = e.clientX - this.root.getBoundingClientRect().left < this.root.clientWidth / 2;
-      const control = left ? this.move : this.aim;
-      if (control.pointerId !== null) return;
-      e.preventDefault();
-      this.root.setPointerCapture(e.pointerId);
-      if (left) this.move.begin(e.pointerId, e.clientX, e.clientY);
-      else this.aim.begin(e.pointerId, e.clientX);
-    });
+    this.root.addEventListener('pointerdown', this.beginPointer);
     this.root.addEventListener('pointermove', (e) => {
       if (this.move.pointerId === e.pointerId) this.move.move(e.clientX, e.clientY);
-      if (this.aim.pointerId === e.pointerId) this.aim.move(e.clientX, this.root.clientWidth);
+      if (this.aim.pointerId === e.pointerId) {
+        this.aim.move(e.clientX, e.clientY);
+        this.updateAimVisual();
+      }
     });
     const lift = (e: PointerEvent): void => {
       if (this.move.pointerId === e.pointerId) this.move.end();
       if (this.aim.pointerId === e.pointerId) {
-        if (e.type === 'pointerup') this.aim.move(e.clientX, this.root.clientWidth);
-        else this.aim.reset();
+        // The last pointermove is the deliberate aim; lifting must never add a new direction.
+        if (e.type !== 'pointerup') this.aim.reset();
         this.aim.end();
+        this.aimBase.classList.remove('on');
       }
     };
     this.root.addEventListener('pointerup', lift);
@@ -120,7 +125,30 @@ export class TouchControls {
   }
 
   setVisible(visible: boolean): void {
+    this.visible = visible;
+    if (!visible) this.reset();
     this.root.style.display = visible ? '' : 'none';
+  }
+
+  /** Also accepts the first canvas touch when a hybrid device switches into touch mode. */
+  readonly beginPointer = (e: PointerEvent): void => {
+    if (!this.visible || e.pointerType !== 'touch') return;
+    const left = e.clientX - this.root.getBoundingClientRect().left < this.root.clientWidth / 2;
+    const control = left ? this.move : this.aim;
+    if (control.pointerId !== null) return;
+    e.preventDefault();
+    this.root.setPointerCapture(e.pointerId);
+    if (left) this.move.begin(e.pointerId, e.clientX, e.clientY);
+    else {
+      this.aim.begin(e.pointerId, e.clientX, e.clientY);
+      this.aimBase.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+      this.aimBase.classList.add('on');
+      this.updateAimVisual();
+    }
+  };
+
+  private updateAimVisual(): void {
+    this.aimKnob.style.transform = `translate(${this.aim.x * AIM_PAD_RADIUS}px, ${this.aim.y * AIM_PAD_RADIUS}px)`;
   }
 
   setAbilityStatus(text: string, ready: boolean, active: boolean): void {
@@ -131,8 +159,11 @@ export class TouchControls {
 
   /** Releases every held control, e.g. when switching input mode. */
   reset(): void {
+    const pointers = [this.move.pointerId, this.aim.pointerId];
     this.move.end();
     this.aim.reset();
+    this.aimBase.classList.remove('on');
+    for (const id of pointers) if (id !== null && this.root.hasPointerCapture(id)) this.root.releasePointerCapture(id);
     this.root.querySelectorAll('.touch-btn.on').forEach((button) => button.classList.remove('on'));
   }
 
@@ -141,17 +172,20 @@ export class TouchControls {
     button.type = 'button';
     button.className = `touch-btn ${className}`;
     button.textContent = label;
+    button.setAttribute('aria-label', { swap: 'Cambiar arma', reload: 'Recargar', interact: 'Interactuar', dash: 'Impulso', ability: 'Activar habilidad' }[edge]);
     button.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation(); // keep the root from starting a stick under the button
       this.edges[edge] = true;
+      button.setPointerCapture(e.pointerId);
       button.classList.add('on');
     });
     const off = (): void => button.classList.remove('on');
     button.addEventListener('pointerup', off);
     button.addEventListener('pointercancel', off);
+    button.addEventListener('lostpointercapture', off);
     button.addEventListener('pointerleave', off);
-    this.root.appendChild(button);
+    this.actions.appendChild(button);
     return button;
   }
 }

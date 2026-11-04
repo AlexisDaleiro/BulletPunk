@@ -57,7 +57,7 @@ const environment = new EnvironmentSystem(render, noise, audio, state);
 const vision = new VisionRaycastSystem();
 const fog = new FogSystem(render);
 const aimGuide = new AimGuideSystem(render);
-const characters = new CharacterSystem(render);
+const characters = new CharacterSystem(render, noise, audio);
 const hud = new HudSystem(render, state, fog);
 hud.onAbilityStatus = (text, ready, active) => input.setAbilityStatus(text, ready, active);
 const health = new HealthSystem(render, audio);

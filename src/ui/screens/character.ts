@@ -67,7 +67,7 @@ export function characterScreen(ctx: UiContext): HTMLElement {
     el('div', 'roster-shell', briefing, el('section', 'roster-grid', el('span', 'roster-grid-label', 'SELECCIONA TU ESTILO DE COMBATE'), cards)),
     el('div', 'roster-footer', button('← VOLVER', ctx.back), selected, deploy),
     el('p', 'roster-controls', window.matchMedia('(pointer: coarse)').matches
-      ? 'IZQUIERDA mover · DESLIZA EN LA MITAD DERECHA para girar · CONO ROJO disparo automático'
+      ? 'PAD IZQUIERDO mover · PAD DERECHO apuntar · CONO ROJO disparo automático'
       : 'WASD mover · Ratón apuntar · F habilidad · Espacio dash · Q cambiar arma'),
   );
 }

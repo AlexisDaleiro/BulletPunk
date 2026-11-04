@@ -59,7 +59,7 @@ export function createEnemy(
     .add(enemy, 'fogged', {})
     .add(enemy, 'aiController', createAIController(roomId, waypoints));
   if (elite) world.add(enemy, 'elite', { bonusCredits: ELITE.bonusCredits });
-  renderer.attach(world, enemy, 'entities', new HostileGraphic(appearance, WEAPONS[weapon].type, renderer.renderer));
+  renderer.attach(world, enemy, 'entities', new HostileGraphic(appearance, WEAPONS[weapon], renderer.renderer));
   return enemy;
 }
 

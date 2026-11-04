@@ -1,10 +1,10 @@
 import { weaponMuzzle } from '../characters/weaponPose.ts';
 import { raycastTiles } from '../world/raycast.ts';
 import type { TileMap } from '../world/TileMap.ts';
-import type { WeaponType } from '../types.ts';
+import type { WeaponDefinition, WeaponType } from '../types.ts';
 
 /** The guide starts where bullets do, including the lateral offset of the held weapon. */
-export function traceAim(map: TileMap, x: number, y: number, angle: number, type: WeaponType, range: number) {
+export function traceAim(map: TileMap, x: number, y: number, angle: number, type: WeaponType | WeaponDefinition, range: number) {
   const local = weaponMuzzle(type);
   const cos = Math.cos(angle), sin = Math.sin(angle);
   const sx = x + cos * local.x - sin * local.y, sy = y + sin * local.x + cos * local.y;

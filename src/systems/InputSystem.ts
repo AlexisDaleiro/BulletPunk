@@ -27,8 +27,8 @@ export class InputSystem implements System {
           const p = this.renderer.screenToWorld(s.pointerX, s.pointerY);
           intent.aimAngle = Math.atan2(p.y - t.y, p.x - t.x);
         }
-      } else {
-        intent.aimAngle = Math.atan2(Math.sin(intent.aimAngle + s.aimTurn), Math.cos(intent.aimAngle + s.aimTurn));
+      } else if (s.aimDirection) {
+        intent.aimAngle = Math.atan2(s.aimDirection.y, s.aimDirection.x);
       }
       intent.autoFire = s.mode === 'touch';
       intent.wantsFire = s.fire;

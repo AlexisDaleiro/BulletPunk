@@ -61,6 +61,7 @@ export interface Room {
 }
 
 export interface NoiseEvent {
+  kind?: 'RUN' | 'SHOOT' | 'UTILITY';
   id: string;
   x: number; // World pixels
   y: number;

@@ -28,9 +28,13 @@ export interface HealthComponent {
   temporaryShield?: number;
   hitFlash?: number;
   damageTakenMult?: number;
+  /** Brief visual burst when the final permanent or temporary shield point is lost. */
+  shieldBreak?: number;
 }
 
 export interface CharacterComponent {
+  upgrades?: string[];
+  augments?: { activationHeal?: number; decoy?: boolean; ghostFire?: boolean; novaDamage?: number; scanJam?: boolean; repairShield?: number; pulseDamage?: number; refill?: boolean };
   def: CharacterDef;
   activeRemaining: number;
   cooldownRemaining: number;

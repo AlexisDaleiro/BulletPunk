@@ -1,8 +1,9 @@
 import { readJson, removeKey, writeJson, type KV } from '../core/storage.ts';
 import { DEFAULT_CHARACTER_ID } from '../characters/characters.ts';
+import { awardCosmetics, defaultCollection, sanitizeCollection, type CosmeticCollection } from './cosmetics.ts';
 
 export const PROFILE_KEY = 'bulletpunk.profile';
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2;
 export const NAME_MAX = 16;
 const NAME_PATTERN = /^[A-Za-z0-9 _-]+$/;
 const ID_PATTERN = /^[A-Z][A-Z0-9_]{0,23}$/;
@@ -16,6 +17,7 @@ export interface ProfileStats {
 }
 
 export interface Profile {
+  cosmetics: CosmeticCollection;
   version: number;
   name: string;
   /** The operative JUGAR starts with. */
@@ -41,6 +43,7 @@ export function defaultProfile(): Profile {
     lastCharacter: DEFAULT_CHARACTER_ID,
     stats: { runs: 0, bestFloor: 0, totalTimeSec: 0, maxCredits: 0, kills: 0 },
     runsByCharacter: {},
+    cosmetics: defaultCollection(),
   };
 }
 
@@ -79,6 +82,7 @@ export function sanitizeProfile(raw: unknown): Profile {
       if (ID_PATTERN.test(id) && Math.floor(count(n)) > 0) base.runsByCharacter[id] = Math.floor(count(n));
     }
   }
+  base.cosmetics = awardCosmetics(sanitizeCollection(r.cosmetics), { kills: base.stats.kills, floor: base.stats.bestFloor, runs: base.stats.runs });
   return base;
 }
 
@@ -95,6 +99,7 @@ export function recordRun(profile: Profile, run: RunSummary): Profile {
       kills: stats.kills + Math.floor(count(run.kills)),
     },
     runsByCharacter: { ...profile.runsByCharacter, [run.characterId]: (profile.runsByCharacter[run.characterId] ?? 0) + 1 },
+    cosmetics: awardCosmetics(profile.cosmetics, { kills: stats.kills + Math.floor(count(run.kills)), floor: Math.max(stats.bestFloor, Math.floor(count(run.floor))), runs: stats.runs + 1 }),
   };
 }
 

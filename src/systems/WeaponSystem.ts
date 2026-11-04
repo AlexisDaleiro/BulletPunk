@@ -86,13 +86,13 @@ export class WeaponSystem implements System {
     const character = world.get(entity, 'character');
     const enemy = world.get(entity, 'enemyVisual');
     const color = team === 'PLAYER' ? character?.def.color ?? COLORS.cyan : COLORS.red;
-    const muzzle = character || enemy ? weaponMuzzle(w.type) : { x: MUZZLE_OFFSET, y: 0 };
+    const muzzle = character || enemy ? weaponMuzzle(w) : { x: MUZZLE_OFFSET, y: 0 };
     const mx = t.x + Math.cos(t.angle) * muzzle.x - Math.sin(t.angle) * muzzle.y;
     const my = t.y + Math.sin(t.angle) * muzzle.x + Math.cos(t.angle) * muzzle.y;
     if (character) {
       character.recoil = 1;
       const health = world.get(entity, 'health');
-      if (health && character.def.ability.kind === 'GHOST_STEP') endAbility(character, health);
+      if (health && character.def.ability.kind === 'GHOST_STEP' && !character.augments?.ghostFire) endAbility(character, health);
     }
 
     inv.magazine[inv.activeSlot]--;

@@ -13,6 +13,7 @@ export class NoiseField {
     const profile = NOISE_PROFILES[kind];
     const maxRadius = Math.max(NOISE_START_RADIUS + 1, profile.maxRadius * radiusMult);
     const event: NoiseEvent = {
+      kind,
       id: `noise-${this.nextId++}`,
       x,
       y,

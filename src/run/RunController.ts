@@ -7,9 +7,12 @@ import type { LevelManager } from '../game/LevelManager';
 import type { InputManager } from '../input/InputManager';
 import type { ProfileStore } from '../profile/ProfileStore';
 import type { HudSystem } from '../systems/HudSystem';
+import { applyAbilityUpgrade, upgradeChoices, type AbilityUpgrade } from '../characters/upgrades';
+import { appearanceFor, COSMETICS } from '../profile/cosmetics';
 
 /** A snapshot of the run for the pause summary and the game-over screen. */
 export interface RunInfo {
+  upgrades: string[];
   characterId: string;
   seed: number;
   floor: number;
@@ -41,6 +44,10 @@ const newSeed = (): number => Date.now() >>> 0 || 1;
  * `endRun`, which records it in the profile exactly once.
  */
 export class RunController implements System {
+  upgradeOptions: readonly AbilityUpgrade[] = [];
+  onUpgrade: (() => void) | null = null;
+  private chosenFloor = 0;
+  private seenProgress = '';
   /** True from `startRun` until `quitToMenu`; stays true on the game-over screen. */
   active = false;
   /** True once the player has died. */
@@ -63,7 +70,36 @@ export class RunController implements System {
   }
 
   update(_world: World, dt: number): void {
-    if (this.active && !this.over) this.elapsed += dt;
+    if (!this.active || this.over) return;
+    const { state, world, levels, profile } = this.deps;
+    const progress = `${state.kills}:${state.floor}`;
+    if (progress !== this.seenProgress) {
+      this.seenProgress = progress;
+      const unlocked = profile.checkUnlocks({ kills: profile.value.stats.kills + state.kills, floor: Math.max(profile.value.stats.bestFloor, state.floor), runs: profile.value.stats.runs });
+      if (unlocked.length) state.toast(`DESBLOQUEADO · ${unlocked.map(id => COSMETICS.find(c => c.id === id)?.name).join(' / ')}`, 4);
+    }
+    if (state.floor > this.chosenFloor && levels.player !== null && this.onUpgrade) {
+      const c = world.get(levels.player, 'character');
+      if (c) {
+        this.upgradeOptions = upgradeChoices(c, this.seed, state.floor);
+        this.setMenuOpen(true);
+        this.onUpgrade();
+        return;
+      }
+    }
+    this.elapsed += dt;
+  }
+
+  chooseUpgrade(id: string): boolean {
+    const { world, levels, state } = this.deps;
+    if (!this.active || this.over || this.chosenFloor >= state.floor || !this.upgradeOptions.some(u => u.id === id) || levels.player === null) return false;
+    const c = world.get(levels.player, 'character');
+    if (!c || !applyAbilityUpgrade(c, id)) return false;
+    this.character = c.def;
+    this.chosenFloor = state.floor;
+    this.upgradeOptions = [];
+    this.setMenuOpen(false);
+    return true;
   }
 
   /** A fresh run. A run still in progress is recorded as abandoned first. */
@@ -74,7 +110,8 @@ export class RunController implements System {
     levels.reset();
     hud.reset();
 
-    const character = getCharacter(characterId);
+    const base = getCharacter(characterId);
+    const character = appearanceFor(base, profile.lookFor(base.id));
     profile.setLastCharacter(character.id);
     this.character = character;
     this.seed = seed;
@@ -82,6 +119,9 @@ export class RunController implements System {
     this.over = false;
     this.recorded = false;
     this.active = true;
+    this.chosenFloor = 0;
+    this.seenProgress = '';
+    this.upgradeOptions = [];
     this.deps.state.touch = this.deps.input.inputMode === 'touch';
     levels.start(character, seed);
     game.app.canvas.style.visibility = 'visible';
@@ -124,6 +164,7 @@ export class RunController implements System {
     const { world, levels, state } = this.deps;
     const syn = levels.player === null ? undefined : world.get(levels.player, 'passiveSynergy');
     return {
+      upgrades: levels.player === null ? [] : [...(world.get(levels.player, 'character')?.upgrades ?? [])],
       characterId: this.character.id,
       seed: this.seed,
       floor: state.floor,

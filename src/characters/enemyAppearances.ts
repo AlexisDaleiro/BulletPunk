@@ -1,6 +1,8 @@
 import type { WeaponType } from '../types.ts';
+import type { CosmeticLook } from '../profile/cosmetics.ts';
 
 export interface OperativeAppearance {
+  look?: CosmeticLook;
   id: string;
   color: number;
   palette: { cloth: number; armor: number; light: number; metal: number };

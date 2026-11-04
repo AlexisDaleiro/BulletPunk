@@ -1,10 +1,10 @@
 import type { SoundManager } from '../audio/SoundManager';
 import { applyDamage } from '../combat/damage';
 import { COLORS, TILE_SIZE } from '../config';
-import type { Team } from '../ecs/components';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
-import { spawnDebris, spawnFlash } from '../entities/effects';
+import { spawnFlash, spawnImpactBurst, spawnShieldBreak } from '../entities/effects';
+import { tileImpactMaterial, type ImpactMaterial } from '../combat/impactMaterial';
 import type { ProjectilePool } from '../entities/projectiles';
 import type { Level } from '../game/Level';
 import { raycastTiles, segmentCircle } from '../world/raycast';
@@ -66,9 +66,18 @@ export class ProjectileSystem implements System {
 
       for (const c of candidates) {
         const health = world.get(c.entity, 'health');
-        if (health) applyDamage(health, p.damage);
+        if (health) {
+          const shield = health.shield + (health.temporaryShield ?? 0);
+          const damage = applyDamage(health, p.damage);
+          if (damage > 0) {
+            this.impact(world, t.prevX + (t.x - t.prevX) * c.t, t.prevY + (t.y - t.prevY) * c.t, shield > 0 ? 'SHIELD' : 'ARMOR', t.angle);
+            if (shield > 0 && health.shield + (health.temporaryShield ?? 0) <= 0) {
+              const target = world.get(c.entity, 'transform');
+              if (target) { spawnShieldBreak(world, this.renderer, target.x, target.y); this.audio.playShieldBreak(target); }
+            }
+          }
+        }
         p.hit.push(c.entity);
-        this.impact(world, t.prevX + (t.x - t.prevX) * c.t, t.prevY + (t.y - t.prevY) * c.t, p.team);
         if (!p.piercing) {
           this.pool.release(entity);
           return;
@@ -78,7 +87,8 @@ export class ProjectileSystem implements System {
 
       const hx = t.prevX + (t.x - t.prevX) * wall.t;
       const hy = t.prevY + (t.y - t.prevY) * wall.t;
-      this.impact(world, hx, hy, p.team);
+      const tileX = Math.floor((hx - wall.nx * 2) / TILE_SIZE), tileY = Math.floor((hy - wall.ny * 2) / TILE_SIZE);
+      this.impact(world, hx, hy, tileImpactMaterial(map.get(tileX, tileY)), t.angle);
       if (this.level && (wall.nx !== 0 || wall.ny !== 0)) {
         // The slug entered the tile on the far side of the hit face.
         const tx = Math.floor((hx - wall.nx * 2) / TILE_SIZE);
@@ -107,9 +117,8 @@ export class ProjectileSystem implements System {
     });
   }
 
-  private impact(world: World, x: number, y: number, team: Team): void {
-    spawnFlash(world, this.renderer, x, y, team === 'PLAYER' ? COLORS.cyan : COLORS.red, 9, 0.18);
-    spawnDebris(world, this.renderer, x, y, 0xffd9a4, 3);
-    this.audio.playBulletImpact({ x, y });
+  private impact(world: World, x: number, y: number, material: ImpactMaterial, angle: number): void {
+    spawnImpactBurst(world, this.renderer, x, y, material, angle);
+    this.audio.playMaterialImpact(material, { x, y });
   }
 }

@@ -15,6 +15,7 @@ export function tickAbility(c: CharacterComponent, health: HealthComponent, acti
   if (c.activeRemaining > 0) {
     const healTime = Math.min(dt, c.activeRemaining);
     health.hp = Math.min(health.maxHp, health.hp + (c.def.ability.healPerSecond ?? 0) * healTime);
+    health.shield = Math.min(health.maxShield, health.shield + (c.augments?.repairShield ?? 0) * healTime);
     c.activeRemaining = Math.max(0, c.activeRemaining - dt);
     if (c.activeRemaining === 0 || (c.def.ability.kind === 'OVERLOAD' && !health.temporaryShield)) endAbility(c, health);
   }
@@ -24,6 +25,7 @@ export function tickAbility(c: CharacterComponent, health: HealthComponent, acti
   c.cooldownRemaining = a.cooldown;
   c.activationFlash = 0.5;
   if (a.kind === 'OVERLOAD') health.temporaryShield = a.shieldAmount ?? 0;
+  health.hp = Math.min(health.maxHp, health.hp + (c.augments?.activationHeal ?? 0));
   return true;
 }
 

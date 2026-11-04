@@ -131,7 +131,7 @@ export class LevelManager implements System {
     const hasShop = dungeon.rooms.some((r) => r.type === 'SHOP');
     console.info(`floor ${floor} (seed ${seed}): ${dungeon.rooms.length} rooms, ${bots} bots, ${dungeon.doors.length} locks, ${dungeon.plan.chests.length} chests, ${dungeon.plan.secrets.length} secrets`);
     if (floor === 1) {
-      state.toast(state.touch ? 'JOYSTICK: MOVER · DESLIZA EN LA MITAD DERECHA: GIRAR · DISPARO AUTOMÁTICO' : 'WASD MOVE · F ABILITY · SPACE DASH · Q SWAP · E INTERACT · ODD WALLS CAN BE PUSHED', 5);
+      state.toast(state.touch ? 'PAD IZQUIERDO: MOVER · PAD DERECHO: APUNTAR · DISPARO AUTOMÁTICO' : 'WASD MOVE · F ABILITY · SPACE DASH · Q SWAP · E INTERACT · ODD WALLS CAN BE PUSHED', 5);
     } else {
       state.toast(`FLOOR ${floor}${hasShop ? ' · SHOP ON THIS LEVEL' : ''}`, 3.5);
     }

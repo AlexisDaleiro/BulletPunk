@@ -20,7 +20,7 @@ Los artes originales se generaron con la herramienta integrada `image_gen`. El p
 
 El inicio anima cuatro capas: desplazamiento lento del arte, bruma, lluvia y trama ambiental. Las animaciones se eliminan con `prefers-reduced-motion`. Al cerrar el menú se retiran sus elementos del documento. La selección mantiene el retrato grande, las estadísticas, la habilidad, la pasiva y la debilidad; el panel permite desplazarse en pantallas bajas. Las tarjetas se enfocan con teclado y muestran el operativo seleccionado.
 
-Los botones usan esquinas recortadas, indicadores de estado y una respuesta de pulsación. El botón principal usa ámbar. En móvil, los controles táctiles siguen la misma paleta y el aviso inicial explica el giro por deslizamiento y el disparo automático.
+Los botones usan esquinas recortadas, indicadores de estado y una respuesta de pulsación. El botón principal usa ámbar. En móvil, las cinco acciones ocupan una cuadrícula compacta de tres columnas y dos filas, con áreas táctiles de al menos 44 píxeles. El pad izquierdo mueve al operativo y el derecho apunta en 360 grados; conserva la dirección al soltar y el disparo es automático. El aviso inicial explica estos controles.
 
 ## Partida
 

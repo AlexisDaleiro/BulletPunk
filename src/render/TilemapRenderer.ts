@@ -7,6 +7,7 @@ import type { Decor } from '../world/plan';
 import type { TileMap } from '../world/TileMap';
 import { drawTileObject, shade, WALL_PAL, type ObjCtx } from './tileObjects';
 import { sectorAtmosphere } from './sectorAtmosphere';
+import { LiveScenery, type CombatSource } from './LiveScenery';
 
 const T = TILE_SIZE;
 const AMBER = 0xffe600;
@@ -385,6 +386,7 @@ function drawDecor(list: readonly Decor[]): { floor: Container; wall: Container;
  * redrawn alone. Opening a door or breaking a crate never redraws the map.
  */
 export class TilemapView {
+  private live: LiveScenery | null = null;
   private readonly parent: Container;
   private root: Container | null = null;
   private readonly objects = new Map<number, Graphics>();
@@ -438,8 +440,9 @@ export class TilemapView {
     for (const t of d.plan.terminals) this.addGlow(lights, (t.tx + 0.5) * T, (t.ty + 0.5) * T, 70, 0x6fb4ff, 0.25);
 
     this.objectLayer = new Container();
+    this.live = new LiveScenery(d);
     this.root = new Container();
-    this.root.addChild(drawFloor(d.map, grids), sectorAtmosphere(d), decor.floor, drawWalls(d.map, grids), this.objectLayer, decor.wall, decor.neon, lights);
+    this.root.addChild(drawFloor(d.map, grids), sectorAtmosphere(d), decor.floor, this.live, drawWalls(d.map, grids), this.objectLayer, decor.wall, decor.neon, lights);
     this.parent.addChild(this.root);
 
     for (let ty = 0; ty < d.map.height; ty++) for (let tx = 0; tx < d.map.width; tx++) this.draw(tx, ty);
@@ -500,8 +503,9 @@ export class TilemapView {
   }
 
   /** Broken lamps stutter. */
-  tick(dt: number): void {
+  tick(dt: number, combat: readonly CombatSource[] = []): void {
     this.time += dt;
+    this.live?.tick(dt, combat);
     for (const f of this.flicker) {
       const wave = Math.sin(this.time * f.speed + f.phase) * Math.sin(this.time * f.speed * 0.37 + f.phase);
       f.sprite.alpha = f.base * (wave > 0.5 ? 1 : wave > -0.1 ? 0.55 : 0.12);

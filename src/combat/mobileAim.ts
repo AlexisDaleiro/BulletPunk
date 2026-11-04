@@ -31,7 +31,7 @@ export function mobileAttackCone(world: World, entity: Entity, weapon: WeaponDef
   const movement = Math.min(1, speed / Math.max(1, runSpeed));
   const fov = vision.fov + (stats?.visionAngleBonus ?? 0);
   const visionRange = vision.range * (stats?.visionRangeMult ?? 1) * abilities.visionMult;
-  const local = weaponMuzzle(weapon.type);
+  const local = weaponMuzzle(weapon);
   const cos = Math.cos(t.angle), sin = Math.sin(t.angle);
   return {
     x: t.x, y: t.y,

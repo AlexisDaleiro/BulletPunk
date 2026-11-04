@@ -2,7 +2,9 @@ import { Container, Graphics, Sprite, type Renderer } from 'pixi.js';
 import type { OperativeAppearance } from './enemyAppearances';
 import { cachedArt } from '../render/artCache';
 import { weaponMuzzle } from './weaponPose';
-import type { WeaponType } from '../types';
+import type { WeaponDefinition } from '../types';
+import { weaponVisual } from './weaponVisual';
+import { motionStyle } from './motion';
 import type { CharacterComponent, HealthComponent } from '../ecs/components';
 
 const INK = 0x0b1115;
@@ -13,18 +15,22 @@ export class OperativeGraphic extends Container {
   private readonly feet = [new Graphics(), new Graphics()];
   private readonly gun = new Graphics();
   private readonly effect = new Graphics();
+  private readonly hitEffect = new Graphics();
+  private readonly reloadHand = new Graphics();
+  private readonly reloadMagazine = new Graphics();
   private readonly lights = new Graphics();
   private readonly muzzleLight = new Graphics();
   private readonly torso = new Container();
   private readonly weaponRig = new Container();
   private readonly renderer?: Renderer;
   private damageOverlay?: Sprite;
-  private weaponType: WeaponType | null = null;
+  private weaponKey = '';
+  get equippedWeaponId(): string { return this.weaponKey; }
   private stride = 0;
   private age = 0;
   private readonly def: OperativeAppearance;
 
-  constructor(def: OperativeAppearance, weapon: WeaponType, renderer?: Renderer) {
+  constructor(def: OperativeAppearance, weapon: WeaponDefinition, renderer?: Renderer) {
     super();
     this.def = def;
     this.renderer = renderer;
@@ -34,7 +40,7 @@ export class OperativeGraphic extends Container {
     const shoulder = heavy ? 13 : scout ? 11 : 9;
     const shadow = new Graphics().ellipse(2, 5, heavy ? 24 : 21, heavy ? 21 : 18).fill({ color: 0x000000, alpha: 0.15 })
       .ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.45 });
-    this.addChild(shadow, this.effect, this.rig);
+    this.addChild(shadow, this.effect, this.rig, this.hitEffect);
     this.feet.forEach((foot, i) => {
       foot.roundRect(-15, i ? 3 : -10, 10, 7, 2).fill(INK).stroke({ color: p.metal, width: 0.7 });
       foot.rect(-14, i ? 4 : -9, 3, 5).fill(p.armor);
@@ -164,7 +170,7 @@ export class OperativeGraphic extends Container {
     // Small abrasion marks rather than a full neon outline.
     body.moveTo(-2, -11).lineTo(1, -10).moveTo(-6, 4).lineTo(-4, 3).stroke({ color: p.light, width: 0.6, alpha: 0.7 });
     this.torso.addChild(body);
-    const paintedBody = renderer ? cachedArt(`operative:${def.id}`, this.torso, renderer) : this.torso;
+    const paintedBody = renderer ? cachedArt(`operative:${def.id}:${def.look?.skin ?? 'FIELD'}`, this.torso, renderer) : this.torso;
     this.rig.addChild(paintedBody);
     if (paintedBody instanceof Sprite) {
       this.damageOverlay = new Sprite(paintedBody.texture);
@@ -174,51 +180,78 @@ export class OperativeGraphic extends Container {
       this.rig.addChild(this.damageOverlay);
     }
     this.rig.addChild(this.weaponRig, this.lights, this.muzzleLight);
+    this.reloadHand.roundRect(-3, -2.5, 6, 5, 1.5).fill(p.metal).stroke({ color: INK, width: .8 });
+    this.reloadMagazine.roundRect(-2, -4, 4, 8, .6).fill(p.armor).stroke({ color: p.light, width: .8 });
+    this.rig.addChild(this.reloadMagazine, this.reloadHand);
     this.lights.roundRect(-4, -shoulder - 1, 4, 1.6, 0.5).fill(def.color);
     this.lights.roundRect(-4, shoulder, 3, 1.6, 0.5).fill(def.color);
     this.setWeapon(weapon);
   }
 
-  setWeapon(type: WeaponType): void {
-    if (this.weaponType === type) return;
-    this.weaponType = type;
-    const p = this.def.palette;
-    const m = weaponMuzzle(type);
-    const g = this.gun.clear();
-    g.roundRect(8, 6, 11, 5, 1).fill(INK).stroke({ color: p.metal, width: 0.8 });
-    g.rect(13, 10, 4, 3).fill(p.armor);
-    if (type === 'RAILGUN') {
-      g.roundRect(16, 5, 15, 6, 1).fill(p.light).stroke({ color: INK, width: 1 });
-      g.rect(29, 6, m.x - 29, 4).fill(p.metal).stroke({ color: INK, width: 0.7 });
-      g.rect(20, 6.5, 13, 1).fill(this.def.color);
-      g.roundRect(16, 3, 8, 3, 1).fill(INK);
-      g.circle(23, 4.5, 1).fill(this.def.color);
-    } else if (this.def.id === 'MORSA' && type === 'PLASMA_RIFLE') {
-      g.roundRect(13, 4, 13, 8, 1).fill(p.armor).stroke({ color: INK, width: 1 });
-      g.rect(25, 6, m.x - 25, 4).fill(p.metal);
-      g.ellipse(14, 12, 5, 4).fill(0x35452f).stroke({ color: p.metal, width: 1 });
-      for (let i = 0; i < 3; i++) g.rect(17 + i * 3, 5, 1, 2).fill(p.light);
-    } else if (type === 'PLASMA_RIFLE') {
-      g.roundRect(15, 5, 11, 6, 1).fill(p.light).stroke({ color: INK, width: 1 });
-      g.rect(25, 6, m.x - 25, 4).fill(p.metal);
-      g.rect(18, 7, 10, 1.3).fill(this.def.color);
-    } else if (type === 'SHOTGUN') {
-      g.roundRect(15, 5, 10, 7, 1).fill(p.armor).stroke({ color: INK, width: 1 });
-      g.rect(23, 6, m.x - 23, 4).fill(p.metal);
-      for (let x = 16; x < 23; x += 2) g.moveTo(x, 6).lineTo(x, 11).stroke({ color: INK, width: 1 });
-      g.rect(10, 7, 3, 3).fill(this.def.color);
-    } else {
-      g.roundRect(15, 6, m.x - 15, 4, 1).fill(p.metal).stroke({ color: INK, width: 0.8 });
-      if (type !== 'PISTOL') g.roundRect(m.x - 7, 5, 7, 6, 1).fill(0x29363c).stroke({ color: p.metal, width: 0.6 });
-      g.rect(16, 7, 3, 1).fill(this.def.color);
+  setWeapon(weapon: WeaponDefinition): void {
+    if (this.weaponKey === weapon.id) return;
+    this.weaponKey = weapon.id;
+    const v = weaponVisual(weapon);
+    const finish = this.def.look?.weapon ?? 'FACTORY';
+    const shell = finish === 'COPPER' ? 0xb58055 : finish === 'ION' ? 0x243d53 : this.def.palette.metal;
+    const light = finish === 'ION' ? 0x7df3ef : finish === 'COPPER' ? 0xf5d19b : v.color;
+    const m = weaponMuzzle(weapon), g = this.gun.clear();
+    const y = m.y, half = v.width / 2;
+    g.roundRect(8, y - 2, 12, 5, 1).fill(INK).stroke({ color: shell, width: .8 });
+    g.poly([12, y + 2, 17, y + 2, 15, y + 8, 12, y + 7]).fill(shell).stroke({ color: INK, width: .7 });
+    g.roundRect(15, y - half, Math.max(4, m.x - 18), v.width, 1).fill(shell).stroke({ color: INK, width: 1 });
+    switch (v.style) {
+      case 'PISTOL':
+        g.roundRect(12, y - 3, 8, 5, 1).fill(this.def.palette.light);
+        g.rect(15, y - 2, 3, 1).fill(light);
+        break;
+      case 'SUPPRESSED':
+        g.roundRect(m.x - 12, y - 3.4, 12, 6.8, 1).fill(0x18292e).stroke({ color: shell, width: .8 });
+        g.rect(17, y + 3, 4, 5).fill(0x31454a);
+        g.moveTo(16, y - 1).lineTo(23, y - 1).stroke({ color: light, width: 1 });
+        break;
+      case 'ARC':
+        for (let i = 0; i < 3; i++) g.ellipse(20 + i * 2.7, y, 1.8, 4.3).stroke({ color: light, width: 1 });
+        g.rect(16, y + 3, 4, 7).fill(0xb59e53).stroke({ color: INK, width: .8 });
+        break;
+      case 'COMPACT':
+        g.poly([8, y - 2, 12, y - 5, 14, y - 4, 11, y + 1]).fill(shell);
+        g.rect(17, y + 3, 3, 7).fill(0x26383d);
+        g.rect(19, y - 2, 5, 1).fill(light);
+        break;
+      case 'BELT':
+        g.roundRect(14, y - 5, 14, 10, 2).fill(shell).stroke({ color: INK, width: 1 });
+        g.ellipse(18, y + 7, 6, 4).fill(0x374232).stroke({ color: shell, width: 1 });
+        for (let i = 0; i < 5; i++) g.rect(22 + i * 2.3, y - 5, 1.2, 3).fill(0xd4b779);
+        g.rect(30, y - 2, 9, 4).fill(0x26352c);
+        break;
+      case 'PUMP':
+        g.rect(21, y - 4, 8, 8).fill(0xa87c4f).stroke({ color: INK, width: .8 });
+        for (let i = 0; i < 4; i++) g.moveTo(22 + i * 1.8, y - 3).lineTo(22 + i * 1.8, y + 3).stroke({ color: INK, width: .7 });
+        g.rect(29, y - 1, 3, 2).fill(light);
+        break;
+      case 'DOUBLE':
+        g.rect(20, y - 3, 14, 2).rect(20, y + 1, 14, 2).fill(0x8c8196).stroke({ color: INK, width: .5 });
+        g.moveTo(16, y).lineTo(30, y).stroke({ color: light, width: 1.3 });
+        break;
+      case 'LANCE':
+      case 'HEAVY_RAIL':
+        g.rect(24, y - half, m.x - 24, 1.6).rect(24, y + half - 1.6, m.x - 24, 1.6).fill(this.def.palette.light);
+        g.moveTo(24, y).lineTo(m.x - 1, y).stroke({ color: light, width: v.style === 'LANCE' ? 1 : 2 });
+        g.roundRect(16, y - half - 3, v.style === 'LANCE' ? 10 : 14, 3, 1).fill(INK).stroke({ color: shell, width: .8 });
+        g.circle(24, y - half - 1, 1.3).fill(light);
+        if (v.style === 'HEAVY_RAIL') for (let i = 0; i < 3; i++) g.rect(26 + i * 5, y - half - 1, 2, v.width + 2).fill(shell);
+        break;
+      default:
+        g.rect(18, y - 2, 11, 1.5).fill(light);
+        g.rect(23, y + 3, 4, 5).fill(shell).stroke({ color: INK, width: .8 });
     }
-    g.rect(m.x - 1, 6.5, 1.2, 3).fill(INK);
+    g.rect(m.x - 1, y - 1.5, 1.2, 3).fill(INK);
     for (const child of this.weaponRig.removeChildren()) if (child !== g) child.destroy();
     if (this.renderer) {
-      // Keep the reusable drawing object; cachedArt owns and destroys its temporary container.
       const art = new Container();
       art.addChild(new Graphics(g.context.clone()));
-      this.weaponRig.addChild(cachedArt(`weapon:${this.def.id}:${type}`, art, this.renderer));
+      this.weaponRig.addChild(cachedArt(`weapon:${this.def.id}:${this.def.look?.skin}:${weapon.id}:${finish}`, art, this.renderer));
     } else this.weaponRig.addChild(g);
     this.muzzleLight.clear().poly([m.x - 2, m.y - 2, m.x + 9, m.y, m.x - 2, m.y + 2]).fill(0xffe7b0);
     this.muzzleLight.blendMode = 'add';
@@ -226,23 +259,37 @@ export class OperativeGraphic extends Container {
   }
 
   animateMotion(dt: number, speed: number, recoil: number, h: HealthComponent, reloadProgress = 0): void {
+    const style = motionStyle(this.def.id);
     this.age += dt;
-    this.stride += dt * Math.min(speed, 330) * 0.065;
+    this.stride += dt * Math.min(speed, 330) * style.stride;
     const moving = Math.min(1, speed / 100);
     this.feet.forEach((f, i) => {
-      f.x = Math.sin(this.stride + i * Math.PI) * 3.4 * moving;
+      f.x = Math.sin(this.stride + i * Math.PI) * style.step * moving;
       f.rotation = Math.sin(this.stride + i * Math.PI) * 0.12 * moving;
     });
-    this.rig.y = Math.sin(this.stride * 2) * 0.65 * moving;
-    this.rig.x = -recoil * 0.8 + Math.sin(this.age * 2.3) * 0.22 * (1 - moving);
-    this.rig.rotation = Math.sin(this.stride) * 0.028 * moving;
+    const hit = Math.min(1, (h.hitFlash ?? 0) / .18);
+    this.rig.y = Math.sin(this.stride * 2) * style.bob * moving;
+    this.rig.x = -recoil * 0.8 + Math.sin(this.age * 2.3) * 0.22 * (1 - moving) - hit * 3;
+    this.rig.rotation = Math.sin(this.stride) * style.sway * moving + Math.sin(hit * 12) * hit * .09;
     this.rig.scale.set(1 + Math.sin(this.age * 2.3) * 0.008);
     this.weaponRig.x = -recoil * 3;
-    this.weaponRig.rotation = reloadProgress > 0 ? -0.25 * Math.sin(reloadProgress * Math.PI) : recoil * -0.04;
+    const reload = Math.sin(reloadProgress * Math.PI);
+    this.weaponRig.rotation = reloadProgress > 0 ? style.reloadTilt * reload : recoil * -0.04;
+    this.reloadHand.visible = this.reloadMagazine.visible = reloadProgress > 0;
+    this.reloadHand.position.set(4 + reload * style.handReach, 15 - reload * 6);
+    this.reloadMagazine.position.set(5 + reload * (style.handReach - 2), 21 - reload * 9);
+    this.reloadMagazine.rotation = reload * (this.def.id === 'VOLT' ? Math.PI : -.5);
     this.muzzleLight.visible = recoil > 0.65;
     this.muzzleLight.alpha = recoil;
     this.rig.tint = (h.hitFlash ?? 0) > 0 ? 0xffdfc6 : 0xffffff;
     if (this.damageOverlay) this.damageOverlay.alpha = Math.min(0.65, (h.hitFlash ?? 0) * 4);
+    const broken = h.shieldBreak ?? 0;
+    this.hitEffect.clear();
+    if (broken > 0) {
+      const radius = 24 + (.48 - broken) * 42;
+      for (let i = 0; i < 6; i++) this.hitEffect.arc(0, 0, radius, i * Math.PI / 3 + .12, (i + 1) * Math.PI / 3 - .12)
+        .stroke({ color: 0xadeeff, width: 1.5, alpha: broken * 1.7 });
+    }
   }
 
   animate(dt: number, speed: number, c: CharacterComponent, h: HealthComponent, reloadProgress = 0): void {
@@ -252,22 +299,37 @@ export class OperativeGraphic extends Container {
     const color = this.def.color;
     if (c.activeRemaining > 0 && h.hp > 0) {
       if (this.def.id === 'BRASA') {
-        for (let i = 0; i < 6; i++) e.arc(0, 0, 23, i * Math.PI / 3 + 0.1, (i + 1) * Math.PI / 3 - 0.1).stroke({ color, width: (h.hitFlash ?? 0) > 0 ? 3 : 1.6, alpha: 0.7 });
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3, r = 25 + Math.sin(this.age * 4 + i) * 1.4;
+          const points: number[] = [];
+          for (const [radius, angle] of [[r, a - .38], [r + 5, a - .3], [r + 5, a + .3], [r, a + .38]]) points.push(Math.cos(angle) * radius, Math.sin(angle) * radius);
+          e.poly(points).fill({ color, alpha: .15 + Math.min(.4, (h.hitFlash ?? 0) * 2) }).stroke({ color, width: 1.4, alpha: .85 });
+        }
       } else if (this.def.id === 'VECTOR') {
         const r = 24 + ((this.age * 22) % 18);
         e.arc(0, 0, r, -0.65, 0.65).stroke({ color, alpha: 0.35, width: 1 });
       } else if (this.def.id === 'SUTURA') {
-        e.circle(0, 0, 24).stroke({ color, width: 1, alpha: 0.35 });
-        e.rect(-3, -24, 6, 12).rect(-6, -21, 12, 6).fill({ color, alpha: 0.65 });
+        for (let i = 0; i < 3; i++) {
+          const a = this.age * 1.7 + i * Math.PI * 2 / 3;
+          const x = Math.cos(a) * 29, y = Math.sin(a) * 29;
+          const beamColor = c.augments?.repairShield ? 0x9ee5df : color;
+          e.moveTo(x, y).lineTo(0, 0).stroke({ color: beamColor, width: 1, alpha: .4 + Math.sin(this.age * 12 + i) * .2 });
+          e.ellipse(x + 1, y + 3, 7, 3).fill({ color: 0x000000, alpha: .22 });
+          e.poly([x - 6, y, x - 2, y - 4, x + 4, y - 3, x + 6, y + 1, x, y + 4]).fill(0xdce1d1).stroke({ color: 0x2a3f43, width: 1 });
+          e.circle(x, y, 1.8).fill(beamColor);
+        }
       } else if (this.def.id === 'VOLT') {
         const r = Math.min(c.def.ability.pulseRadius ?? 170, 20 + (c.def.ability.duration - c.activeRemaining) * 220);
         e.circle(0, 0, r).stroke({ color, width: 1.6, alpha: Math.max(0.05, 0.6 - (r / 170) * 0.5) });
       } else if (this.def.id === 'MORSA') {
         e.poly([-20, -20, 20, -20, 24, -12, 24, 12, 20, 20, -20, 20]).stroke({ color, width: 2, alpha: 0.6 });
+        for (const side of [-1, 1]) e.poly([-12, side * 10, -27, side * 19, -30, side * 23, -18, side * 22]).fill({ color: 0xa4ac86, alpha: .7 }).stroke({ color, width: 1 });
       } else {
-        e.moveTo(-22, -10).lineTo(-12, -10).moveTo(-22, 10).lineTo(-12, 10).stroke({ color, width: 1.2, alpha: 0.6 });
+        for (let i = 0; i < 5; i++) e.rect(-24 - i * 3, -12 + i * 5, 10 + i % 2 * 5, 2).fill({ color, alpha: .2 + Math.sin(this.age * 16 + i) * .1 });
+        this.rig.alpha = .45 + Math.sin(this.age * 11) * .1;
       }
     }
+    if (this.def.id !== 'NIX' || c.activeRemaining <= 0) this.rig.alpha = 1;
     if (c.activationFlash > 0) e.circle(0, 0, 18 + (0.5 - c.activationFlash) * 24).stroke({ color, width: 1.5, alpha: c.activationFlash });
   }
 

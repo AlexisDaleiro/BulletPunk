@@ -43,7 +43,7 @@ export class PresentationSystem implements System {
     world.each(['enemyVisual', 'renderable', 'health', 'transform', 'aiController', 'weaponInventory'], (_e, v, r, h, t, ai, inv) => {
       if (!r.node.visible || !(r.node instanceof HostileGraphic)) return;
       const w = inv.slots[inv.activeSlot];
-      r.node.setWeapon(w.type);
+      r.node.setWeapon(w);
       r.node.animateHostile(dt, Math.hypot(t.vx, t.vy), v.recoil, h, t.angle, ai.state, inv.reloadTimer > 0 ? 1 - inv.reloadTimer / w.reloadTime : 0, ai.disruptedTimer > 0);
     });
     world.each(['pickupVisual', 'pickup', 'renderable'], (entity, v, _p, r) => {

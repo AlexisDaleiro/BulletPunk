@@ -54,7 +54,7 @@ export class LocomotionSystem implements System {
       }
 
       loc.gait = loc.dashTimer > 0 ? 'RUN' : mag <= IDLE_INPUT ? 'IDLE' : mag < SNEAK_INPUT ? 'SNEAK' : 'RUN';
-      t.angle = smoothAngle(t.angle, intent.aimAngle, loc.turnRate, dt);
+      t.angle = smoothAngle(t.angle, intent.aimAngle, loc.turnRate * (intent.autoFire ? 1.8 : 1), dt);
     });
   }
 }

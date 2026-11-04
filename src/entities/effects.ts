@@ -3,6 +3,7 @@ import { COLORS } from '../config';
 import { createTransform } from '../ecs/components';
 import type { World } from '../ecs/World';
 import type { RenderSystem } from '../systems/RenderSystem';
+import { IMPACT_STYLE, type ImpactMaterial } from '../combat/impactMaterial';
 
 /** Short additive blob for muzzle flares and bullet impacts. Hidden when outside the player's light. */
 export function spawnFlash(
@@ -78,4 +79,52 @@ export function spawnPopup(world: World, renderer: RenderSystem, x: number, y: n
   t.vy = -38;
   world.add(popup, 'transform', t).add(popup, 'lifetime', { age: 0, duration: 0.9, startAlpha: 1 });
   renderer.attach(world, popup, 'ripples', node);
+}
+
+/** Material-specific chips and sparks, with the same bounded particle pool budget as debris. */
+export function spawnImpactBurst(world: World, renderer: RenderSystem, x: number, y: number, material: ImpactMaterial, incoming: number): void {
+  const style = IMPACT_STYLE[material];
+  spawnFlash(world, renderer, x, y, style.color, material === 'SHIELD' ? 12 : 7, .13);
+  const budget = Math.min(style.count, 160 - world.store('particle').size);
+  const key = `impact:${material}`;
+  let shape = particleShapes.get(key);
+  if (!shape) {
+    shape = material === 'METAL' || material === 'SHIELD' || material === 'ARMOR'
+      ? new GraphicsContext().poly([-5, 0, 0, -1, 3, 0, 0, 1]).fill(style.chips)
+      : new GraphicsContext().poly([-2, -1, 2, -2, 3, 1, -1, 2]).fill(style.chips);
+    particleShapes.set(key, shape);
+  }
+  for (let i = 0; i < budget; i++) {
+    const id = world.create();
+    const angle = incoming + Math.PI + (Math.random() - .5) * 2.5;
+    const t = createTransform(x, y, angle);
+    const speed = 60 + Math.random() * 140;
+    t.vx = Math.cos(angle) * speed; t.vy = Math.sin(angle) * speed;
+    world.add(id, 'transform', t).add(id, 'particle', { drag: material === 'WOOD' ? 5 : 3, spin: style.dust ? 6 : 0 })
+      .add(id, 'fogged', {}).add(id, 'lifetime', { age: 0, duration: .2 + Math.random() * .2, startAlpha: .9 });
+    const node = new Graphics(shape);
+    if (!style.dust) node.blendMode = 'add';
+    renderer.attach(world, id, 'entities', node);
+  }
+  if (style.dust) {
+    const id = world.create();
+    world.add(id, 'transform', createTransform(x, y)).add(id, 'fogged', {})
+      .add(id, 'lifetime', { age: 0, duration: .35, startAlpha: style.dust });
+    renderer.attach(world, id, 'entities', new Graphics().circle(0, 0, 11).fill(style.chips));
+  }
+}
+
+export function spawnShieldBreak(world: World, renderer: RenderSystem, x: number, y: number): void {
+  const id = world.create();
+  const g = new Graphics();
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    const px = Math.cos(a) * 20, py = Math.sin(a) * 20;
+    g.poly([px, py - 4, px + 5, py, px, py + 4, px - 3, py]).stroke({ color: 0xb6efff, width: 1.3 });
+    g.moveTo(Math.cos(a) * 24, Math.sin(a) * 24).lineTo(Math.cos(a) * 34, Math.sin(a) * 34).stroke({ color: 0x86dbe8, width: 1.2, alpha: .6 });
+  }
+  g.blendMode = 'add';
+  world.add(id, 'transform', createTransform(x, y)).add(id, 'fogged', {})
+    .add(id, 'lifetime', { age: 0, duration: .32, startAlpha: .95 });
+  renderer.attach(world, id, 'entities', g);
 }

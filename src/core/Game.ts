@@ -92,8 +92,17 @@ export class Game {
     const frameDt = Math.min(rawDt, MAX_FRAME_DT);
     this.accumulator += frameDt;
     while (this.accumulator >= FIXED_DT) {
-      for (const system of this.systems) system.update?.(this.world, FIXED_DT);
+      for (const system of this.systems) {
+        system.update?.(this.world, FIXED_DT);
+        if (this.paused) break;
+      }
       this.world.flush();
+      if (this.paused) {
+        this.accumulator = 0;
+        // A floor-choice menu can open mid-step: show the new floor without advancing combat.
+        for (const system of this.systems) system.render?.(this.world, 1, 0);
+        return;
+      }
       this.accumulator -= FIXED_DT;
     }
     const alpha = this.accumulator / FIXED_DT;

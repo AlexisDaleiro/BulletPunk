@@ -2,6 +2,7 @@ import { getCharacter } from '../../characters/characters';
 import { button, confirmButton, copyButton, el } from '../dom';
 import { formatDuration, seedUrl } from '../format';
 import type { UiContext } from '../UI';
+import { ABILITY_UPGRADES } from '../../characters/upgrades';
 
 /** Run summary on the left, the four choices on the right. Options are the same screen as on the title. */
 export function pauseScreen(ctx: UiContext): HTMLElement {
@@ -18,6 +19,7 @@ export function pauseScreen(ctx: UiContext): HTMLElement {
     line('KILLS', String(info.kills)),
     line('TIME', formatDuration(info.timeSec)),
     line('IMPLANTS', info.implants.length > 0 ? info.implants.join(', ') : 'NONE', 'stat block'),
+    line('EVOLUCIONES', info.upgrades.length ? info.upgrades.map(id => ABILITY_UPGRADES.find(u => u.id === id)?.name).join(', ') : 'NINGUNA', 'stat block'),
     el('div', 'row seed', el('span', 'name', `SEED ${info.seed}`), copyButton('COPY LINK', () => seedUrl(location.href, info.seed))),
   );
 
