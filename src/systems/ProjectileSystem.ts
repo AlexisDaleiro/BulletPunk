@@ -68,10 +68,11 @@ export class ProjectileSystem implements System {
         const health = world.get(c.entity, 'health');
         if (health) {
           const shield = health.shield + (health.temporaryShield ?? 0);
+          const recentBreak = health.shieldBreak ?? 0;
           const damage = applyDamage(health, p.damage);
           if (damage > 0) {
             this.impact(world, t.prevX + (t.x - t.prevX) * c.t, t.prevY + (t.y - t.prevY) * c.t, shield > 0 ? 'SHIELD' : 'ARMOR', t.angle);
-            if (shield > 0 && health.shield + (health.temporaryShield ?? 0) <= 0) {
+            if (recentBreak <= 0 && (health.shieldBreak ?? 0) > 0) {
               const target = world.get(c.entity, 'transform');
               if (target) { spawnShieldBreak(world, this.renderer, target.x, target.y); this.audio.playShieldBreak(target); }
             }

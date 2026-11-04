@@ -1,12 +1,15 @@
 import type { CharacterDef } from '../characters/characters';
 import { el } from './dom';
+import { DEFAULT_LOOK, type CosmeticLook } from '../profile/cosmetics';
 
 export const SPLASH_ROOT = `${import.meta.env.BASE_URL}art/splash/`;
 
 /** Marketing artwork stays independent of the tactical sprites used in the simulation. */
-export function operativeSplash(def: CharacterDef, className: string, decorative = false): HTMLImageElement {
+export function operativeSplash(def: CharacterDef, className: string, decorative = false, look: CosmeticLook = def.look ?? DEFAULT_LOOK): HTMLImageElement {
   const image = el('img', className);
-  image.src = `${SPLASH_ROOT}${def.id.toLowerCase()}.webp`;
+  image.src = `${SPLASH_ROOT}${def.id.toLowerCase()}${look.pose === 'COMBAT' ? '-combat' : ''}.webp`;
+  image.dataset.skin = look.skin;
+  image.dataset.portrait = '';
   image.alt = decorative ? '' : `Splash art de ${def.name}, ${def.role.toLowerCase()}`;
   image.decoding = 'async';
   image.draggable = false;

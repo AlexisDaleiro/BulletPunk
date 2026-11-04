@@ -1,4 +1,4 @@
-import { getCharacter, type CharacterDef } from '../characters/characters';
+import { getCharacter, type CharacterDef } from '../characters/characters.ts';
 import type { Game } from '../core/Game';
 import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
@@ -7,11 +7,14 @@ import type { LevelManager } from '../game/LevelManager';
 import type { InputManager } from '../input/InputManager';
 import type { ProfileStore } from '../profile/ProfileStore';
 import type { HudSystem } from '../systems/HudSystem';
-import { applyAbilityUpgrade, upgradeChoices, type AbilityUpgrade } from '../characters/upgrades';
-import { appearanceFor, COSMETICS } from '../profile/cosmetics';
+import { applyAbilityUpgrade, upgradeChoices, type AbilityUpgrade } from '../characters/upgrades.ts';
+import { appearanceFor, COSMETICS } from '../profile/cosmetics.ts';
+import { gainExperience } from './experience.ts';
 
 /** A snapshot of the run for the pause summary and the game-over screen. */
 export interface RunInfo {
+  experience: number;
+  experienceLevel: number;
   upgrades: string[];
   characterId: string;
   seed: number;
@@ -46,7 +49,8 @@ const newSeed = (): number => Date.now() >>> 0 || 1;
 export class RunController implements System {
   upgradeOptions: readonly AbilityUpgrade[] = [];
   onUpgrade: (() => void) | null = null;
-  private chosenFloor = 0;
+  /** The next earned level whose upgrade is waiting to be selected. */
+  get upgradeLevel(): number { const xp = this.deps.state.experience; return xp.level - xp.pending + 1; }
   private seenProgress = '';
   /** True from `startRun` until `quitToMenu`; stays true on the game-over screen. */
   active = false;
@@ -78,27 +82,45 @@ export class RunController implements System {
       const unlocked = profile.checkUnlocks({ kills: profile.value.stats.kills + state.kills, floor: Math.max(profile.value.stats.bestFloor, state.floor), runs: profile.value.stats.runs });
       if (unlocked.length) state.toast(`DESBLOQUEADO · ${unlocked.map(id => COSMETICS.find(c => c.id === id)?.name).join(' / ')}`, 4);
     }
-    if (state.floor > this.chosenFloor && levels.player !== null && this.onUpgrade) {
-      const c = world.get(levels.player, 'character');
-      if (c) {
-        this.upgradeOptions = upgradeChoices(c, this.seed, state.floor);
-        this.setMenuOpen(true);
-        this.onUpgrade();
-        return;
-      }
+    if (state.experience.pending > 0 && levels.player !== null && (world.get(levels.player, 'health')?.hp ?? 0) > 0 && this.onUpgrade) {
+      if (!this.upgradeOptions.length) this.offerUpgrade();
+      return;
     }
     this.elapsed += dt;
   }
 
+  awardExperience(amount: number): number {
+    if (!this.active || this.over || this.recorded) return 0;
+    return gainExperience(this.deps.state.experience, amount);
+  }
+
+  private offerUpgrade(): void {
+    const { levels, world } = this.deps;
+    const c = levels.player === null ? undefined : world.get(levels.player, 'character');
+    if (!c) return;
+    this.upgradeOptions = upgradeChoices(c, this.seed, this.upgradeLevel);
+    this.setMenuOpen(true);
+    this.onUpgrade?.();
+  }
+
   chooseUpgrade(id: string): boolean {
     const { world, levels, state } = this.deps;
-    if (!this.active || this.over || this.chosenFloor >= state.floor || !this.upgradeOptions.some(u => u.id === id) || levels.player === null) return false;
+    if (!this.active || this.over || state.experience.pending <= 0 || !this.upgradeOptions.some(u => u.id === id) || levels.player === null
+      || (world.get(levels.player, 'health')?.hp ?? 0) <= 0) return false;
     const c = world.get(levels.player, 'character');
+    const previousHp = c?.augments?.maxHp ?? 0, previousShield = c?.augments?.maxShield ?? 0;
     if (!c || !applyAbilityUpgrade(c, id)) return false;
+    const health = world.get(levels.player, 'health');
+    if (health) {
+      const hp = (c.augments?.maxHp ?? 0) - previousHp, shield = (c.augments?.maxShield ?? 0) - previousShield;
+      health.maxHp += hp; health.hp = Math.min(health.maxHp, health.hp + hp);
+      health.maxShield += shield; health.shield = Math.min(health.maxShield, health.shield + shield);
+    }
     this.character = c.def;
-    this.chosenFloor = state.floor;
+    state.experience.pending--;
     this.upgradeOptions = [];
-    this.setMenuOpen(false);
+    if (state.experience.pending > 0) this.offerUpgrade();
+    else this.setMenuOpen(false);
     return true;
   }
 
@@ -119,7 +141,6 @@ export class RunController implements System {
     this.over = false;
     this.recorded = false;
     this.active = true;
-    this.chosenFloor = 0;
     this.seenProgress = '';
     this.upgradeOptions = [];
     this.deps.state.touch = this.deps.input.inputMode === 'touch';
@@ -164,6 +185,8 @@ export class RunController implements System {
     const { world, levels, state } = this.deps;
     const syn = levels.player === null ? undefined : world.get(levels.player, 'passiveSynergy');
     return {
+      experience: state.experience.total,
+      experienceLevel: state.experience.level,
       upgrades: levels.player === null ? [] : [...(world.get(levels.player, 'character')?.upgrades ?? [])],
       characterId: this.character.id,
       seed: this.seed,

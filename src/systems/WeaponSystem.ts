@@ -113,7 +113,7 @@ export class WeaponSystem implements System {
     spawnFlash(world, this.renderer, mx, my, color, 7, 0.08);
     spawnDebris(world, this.renderer, t.x - Math.sin(t.angle) * 13, t.y + Math.cos(t.angle) * 13, 0xc8a675, 1, true);
 
-    const damage = w.damagePerPellet * (stats?.damageMult ?? 1) * abilityModifiers(character).damageMult;
+    const damage = w.damagePerPellet * (stats?.damageMult ?? 1) * abilityModifiers(character).damageMult * (character?.augments?.damageMult ?? 1);
     const bounces = (w.specialAttributes?.ricochetCount ?? 0) + (stats?.bulletBounces ?? 0);
     for (let i = 0; i < w.pelletCount; i++) {
       this.pool.spawn({

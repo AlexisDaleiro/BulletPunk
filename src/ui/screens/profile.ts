@@ -3,6 +3,7 @@ import { favoriteCharacter, NAME_MAX } from '../../profile/Profile';
 import { button, confirmButton, el, row } from '../dom';
 import { formatDuration } from '../format';
 import type { UiContext } from '../UI';
+import { COSMETICS, DEFAULT_UNLOCKS } from '../../profile/cosmetics';
 
 export function profileScreen(ctx: UiContext): HTMLElement {
   const { profile } = ctx;
@@ -50,6 +51,7 @@ export function profileScreen(ctx: UiContext): HTMLElement {
       ['TOTAL TIME', formatDuration(p.stats.totalTimeSec)],
       ['MAX CREDITS', String(p.stats.maxCredits)],
       ['KILLS', String(p.stats.kills)],
+      ['COSMÉTICOS', `${p.cosmetics.unlocked.length - DEFAULT_UNLOCKS.length} / ${COSMETICS.length - DEFAULT_UNLOCKS.length}`],
     ];
     stats.replaceChildren(...lines.map(([k, v]) => el('div', 'stat', el('span', '', k), el('strong', 'value', v))));
   };
@@ -74,6 +76,6 @@ export function profileScreen(ctx: UiContext): HTMLElement {
     row('CALLSIGN', name, button('SAVE', save)),
     message,
     stats,
-    el('div', 'actions', wipe, button('BACK', ctx.back)),
+    el('div', 'actions', button('PERSONALIZAR', () => ctx.go('cosmetics')), wipe, button('BACK', ctx.back)),
   );
 }

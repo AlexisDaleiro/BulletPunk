@@ -1,7 +1,9 @@
 import type { KeyColor } from '../types';
+import { createExperience } from '../run/experience.ts';
 
 /** Run-wide state that is not an entity: floor, credits, keycards, and what the HUD should say. */
 export class GameState {
+  experience = createExperience();
   floor = 1;
   credits = 0;
   readonly keys: Record<KeyColor, boolean> = { red: false, blue: false, gold: false };
@@ -16,6 +18,7 @@ export class GameState {
 
   /** Back to a fresh run. `touch` stays: it follows the device, not the run. */
   reset(): void {
+    this.experience = createExperience();
     this.floor = 1;
     this.credits = 0;
     this.kills = 0;

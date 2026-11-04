@@ -8,6 +8,7 @@ import { initLandscape } from './input/landscape';
 import { NoiseField } from './noise/NoiseField';
 import { ProfileStore } from './profile/ProfileStore';
 import { RunController } from './run/RunController';
+import { KILL_XP } from './run/experience';
 import { SettingsStore } from './settings/SettingsStore';
 import { AISystem } from './systems/AISystem';
 import { AimGuideSystem } from './systems/AimGuideSystem';
@@ -64,6 +65,7 @@ const health = new HealthSystem(render, audio);
 const pickups = new PickupSystem(state, audio, render);
 health.onKill = (elite) => {
   state.kills++;
+  run.awardExperience(elite ? KILL_XP.elite : KILL_XP.normal);
   if (elite) state.toast('BASTIÓN NEUTRALIZADO · BOTÍN DE ÉLITE', 3);
 };
 

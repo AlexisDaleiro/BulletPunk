@@ -11,6 +11,9 @@ export const ABILITY_UPGRADES: readonly AbilityUpgrade[] = [
   { id: 'LONG_CYCLE', name: 'Tiempo prestado', description: '+25% de duración de habilidad, hasta 15 s. Acumulable.', glyph: '◷', repeatable: true },
   { id: 'QUICK_RECYCLE', name: 'Circuito recursivo', description: '−15% de recarga de habilidad, hasta un mínimo de 3 s. Acumulable.', glyph: '⟳', repeatable: true },
   { id: 'SECOND_WIND', name: 'Segundo aliento', description: 'Activar la habilidad recupera 12 de vida, hasta 60 por activación. Acumulable.', glyph: '✚', repeatable: true },
+  { id: 'BALLISTICS', name: 'Especialización balística', description: '+5% de daño de disparos durante esta incursión. Acumulable.', glyph: '⌁', repeatable: true },
+  { id: 'STRUCTURAL', name: 'Núcleo vital', description: '+10 de vida máxima y recupera esa cantidad. Acumulable durante esta incursión.', glyph: '✚', repeatable: true },
+  { id: 'ENERGY_RESERVE', name: 'Reserva de energía', description: '+10 de escudo máximo y recupera esa cantidad. Acumulable durante esta incursión.', glyph: '⬡', repeatable: true },
   { id: 'NIX_ECHO', character: 'NIX', name: 'Eco señuelo', description: 'Paso Fantasma deja una silueta sonora en el punto de activación que atrae patrullas.', glyph: '◈' },
   { id: 'NIX_PHASE', character: 'NIX', name: 'Disparo espectral', description: 'Disparar ya no interrumpe Paso Fantasma.', glyph: '⌁' },
   { id: 'BRASA_NOVA', character: 'BRASA', name: 'Descarga de ruptura', description: 'Activar la sobrecarga inflige 24 de daño a enemigos cercanos con línea de visión.', glyph: '✹' },
@@ -25,10 +28,13 @@ export const ABILITY_UPGRADES: readonly AbilityUpgrade[] = [
   { id: 'MORSA_FEED', character: 'MORSA', name: 'Cinta de emergencia', description: 'Activar Anclaje llena el cargador del arma actual consumiendo su reserva.', glyph: '≋' },
 ];
 
-export function upgradeChoices(c: CharacterComponent, seed: number, floor: number): AbilityUpgrade[] {
+export function upgradeChoices(c: CharacterComponent, seed: number, evolutionLevel: number): AbilityUpgrade[] {
   const owned = c.upgrades ?? [];
-  const available = ABILITY_UPGRADES.filter(u => (!u.character || u.character === c.def.id) && (u.repeatable || !owned.includes(u.id)));
-  const rng = createRng(seed ^ Math.imul(floor, 7919));
+  const available = ABILITY_UPGRADES.filter(u => (!u.character || u.character === c.def.id) && (u.repeatable || !owned.includes(u.id))
+    && (u.id !== 'LONG_CYCLE' || c.def.ability.duration < 15)
+    && (u.id !== 'QUICK_RECYCLE' || c.def.ability.cooldown > 3)
+    && (u.id !== 'SECOND_WIND' || (c.augments?.activationHeal ?? 0) < 60));
+  const rng = createRng(seed ^ Math.imul(evolutionLevel, 7919));
   const special = available.filter(u => u.character);
   const choices: AbilityUpgrade[] = [];
   if (special.length) choices.push(special[rng.int(0, special.length - 1)]);
@@ -50,6 +56,9 @@ export function applyAbilityUpgrade(c: CharacterComponent, id: string): boolean 
     case 'LONG_CYCLE': a.duration = Math.min(15, a.duration * 1.25); break;
     case 'QUICK_RECYCLE': a.cooldown = Math.max(3, a.cooldown * .85); break;
     case 'SECOND_WIND': c.augments.activationHeal = Math.min(60, (c.augments.activationHeal ?? 0) + 12); break;
+    case 'BALLISTICS': c.augments.damageMult = (c.augments.damageMult ?? 1) * 1.05; break;
+    case 'STRUCTURAL': c.augments.maxHp = (c.augments.maxHp ?? 0) + 10; break;
+    case 'ENERGY_RESERVE': c.augments.maxShield = (c.augments.maxShield ?? 0) + 10; break;
     case 'NIX_ECHO': c.augments.decoy = true; break;
     case 'NIX_PHASE': c.augments.ghostFire = true; break;
     case 'BRASA_NOVA': c.augments.novaDamage = 24; break;

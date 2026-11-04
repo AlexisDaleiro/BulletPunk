@@ -24,8 +24,9 @@ export function characterScreen(ctx: UiContext): HTMLElement {
     deploy.textContent = `DESPLEGAR A ${def.name} ↗`;
     selected.textContent = `${def.name} / LISTO PARA DESPLIEGUE`;
     briefing.style.setProperty('--c', hex(def.color));
+    briefing.dataset.frame = profile.lookFor(def.id).frame;
     briefing.replaceChildren(
-      operativeSplash(def, 'briefing-splash'), el('div', 'briefing-shade'),
+      operativeSplash(def, 'briefing-splash', false, profile.lookFor(def.id)), el('div', 'briefing-shade'),
       el('div', 'briefing-content',
         el('span', 'card-role', `OPERATIVO / ${def.role}`), el('strong', 'briefing-name', def.name),
         el('p', 'briefing-description', def.description),
@@ -45,11 +46,12 @@ export function characterScreen(ctx: UiContext): HTMLElement {
   };
 
   for (const [index, def] of CHARACTERS.entries()) {
-    const card = el('button', 'card', operativeSplash(def, 'card-splash', true),
+    const card = el('button', 'card', operativeSplash(def, 'card-splash', true, profile.lookFor(def.id)),
       el('span', 'card-number', `0${index + 1}`), el('span', 'card-selection', '↗'),
       el('div', 'card-caption', el('span', 'card-role', def.role), el('strong', 'card-name', def.name)),
     );
     card.type = 'button';
+    card.dataset.frame = profile.lookFor(def.id).frame;
     card.style.setProperty('--c', hex(def.color));
     card.setAttribute('aria-label', `${def.name}, ${def.role.toLowerCase()}`);
     card.addEventListener('click', () => { profile.setLastCharacter(def.id); refresh(); });
@@ -65,7 +67,7 @@ export function characterScreen(ctx: UiContext): HTMLElement {
       el('p', 'roster-subtitle', 'Seis formas de entrar. Una salida.'),
     ),
     el('div', 'roster-shell', briefing, el('section', 'roster-grid', el('span', 'roster-grid-label', 'SELECCIONA TU ESTILO DE COMBATE'), cards)),
-    el('div', 'roster-footer', button('← VOLVER', ctx.back), selected, deploy),
+    el('div', 'roster-footer', button('← VOLVER', ctx.back), button('PERSONALIZAR', () => ctx.go('cosmetics')), selected, deploy),
     el('p', 'roster-controls', window.matchMedia('(pointer: coarse)').matches
       ? 'PAD IZQUIERDO mover · PAD DERECHO apuntar · CONO ROJO disparo automático'
       : 'WASD mover · Ratón apuntar · F habilidad · Espacio dash · Q cambiar arma'),

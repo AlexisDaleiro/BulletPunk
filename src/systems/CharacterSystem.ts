@@ -43,17 +43,19 @@ export class CharacterSystem implements System {
           const emp = c.def.ability.kind === 'EMP_PULSE';
           const radius = emp ? c.def.ability.pulseRadius ?? 170 : c.augments?.scanJam ? 230 : 145;
           if (health.hp <= 0 || !pulseReaches(this.map!, t.x, t.y, enemy.x, enemy.y, radius)) return;
-          if (c.augments?.scanJam && !canSee(this.map!, t.x, t.y, t.angle, world.get(_entity, 'vision')?.fov ?? 1.4, radius, enemy.x, enemy.y)) return;
+          const fov = (world.get(_entity, 'vision')?.fov ?? 1.4) + (world.get(_entity, 'passiveSynergy')?.stats.visionAngleBonus ?? 0);
+          if (c.augments?.scanJam && !canSee(this.map!, t.x, t.y, t.angle, fov, radius, enemy.x, enemy.y)) return;
           if (emp || c.augments?.scanJam) {
             ai.disruptedTimer = Math.max(ai.disruptedTimer, emp ? c.def.ability.duration : 1);
             enemyIntent.moveX = enemyIntent.moveY = 0;
             enemyIntent.wantsFire = false;
           }
           const shield = health.shield + (health.temporaryShield ?? 0);
+          const recentBreak = health.shieldBreak ?? 0;
           const damage = c.augments?.novaDamage ?? (emp ? c.augments?.pulseDamage ?? 0 : 0);
           if (applyDamage(health, damage) > 0) {
             spawnImpactBurst(world, this.renderer, enemy.x, enemy.y, shield > 0 ? 'SHIELD' : 'ARMOR', Math.atan2(enemy.y - t.y, enemy.x - t.x));
-            if (shield > 0 && health.shield + (health.temporaryShield ?? 0) <= 0) spawnShieldBreak(world, this.renderer, enemy.x, enemy.y);
+            if (recentBreak <= 0 && (health.shieldBreak ?? 0) > 0) spawnShieldBreak(world, this.renderer, enemy.x, enemy.y);
           }
           spawnDebris(world, this.renderer, enemy.x, enemy.y, c.def.color, 4);
         });

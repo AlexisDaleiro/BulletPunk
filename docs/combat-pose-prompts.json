@@ -1,0 +1,31 @@
+{
+  "tool": "Built-in image_gen",
+  "reference": "The corresponding original operative splash in public/art/splash/",
+  "instructions": "Use case: identity-preserve / stylized-concept. Asset type: unlockable alternate combat pose splash art for original cyberpunk game BULLETPUNK. Reference image is the exact character identity and art direction to preserve: face, age, ethnicity, hair, outfit, weapon, palette and premium painterly illustration. Create a NEW distinct dynamic combat stance, vertical 2:3 waist-up portrait. Same individual, face at upper third, head entirely within frame, strong silhouette and expressive eyes. Real hands and believable anatomy. Dramatic diagonal composition in industrial night atmosphere with turquoise and amber rim light. No text, no logos, no watermark. Do not simply crop or tilt the reference: change actual body/arm/weapon pose.",
+  "poses": {
+    "nix": {
+      "path": "public/art/splash/nix-combat.webp",
+      "prompt": "Nix crouches forward slightly, suppressed SMG shouldered and aimed to the LEFT, head turned toward viewer with focused confident gaze, fragmented jade afterimages streaking behind her cloak."
+    },
+    "brasa": {
+      "path": "public/art/splash/brasa-combat.webp",
+      "prompt": "Brasa plants her shoulder forward, shotgun held upright close to her chest in one hand, the other forearm raised to project segmented amber energy shield plates, fierce grin, flying warm sparks."
+    },
+    "vector": {
+      "path": "public/art/splash/vector-combat.webp",
+      "prompt": "Vector rotates sideways, precision rail rifle shouldered and aimed across the frame toward the right, cheek near stock, silver hair and violet optical reticle, cool focused expression."
+    },
+    "sutura": {
+      "path": "public/art/splash/sutura-combat.webp",
+      "prompt": "Sutura extends a gloved hand forward with three small repair drones orbiting it, pulse carbine held diagonally close in her other hand, determined gaze and rose biotic beams, ivory armor preserved."
+    },
+    "volt": {
+      "path": "public/art/splash/volt-combat.webp",
+      "prompt": "Volt twists in a dynamic combat stance, electric gauntlet extended with blue arcing interference, SMG raised across the torso in other hand, lively defiant grin and mustard jacket preserved."
+    },
+    "morsa": {
+      "path": "public/art/splash/morsa-combat.webp",
+      "prompt": "Morsa braces his huge belt-fed machinegun at shoulder level ready to fire toward the left, low powerful posture, gray walrus moustache, stern eyes, olive exoframe anchored, brass casings and lime light."
+    }
+  }
+}

@@ -183,6 +183,7 @@ export class OperativeGraphic extends Container {
     this.reloadHand.roundRect(-3, -2.5, 6, 5, 1.5).fill(p.metal).stroke({ color: INK, width: .8 });
     this.reloadMagazine.roundRect(-2, -4, 4, 8, .6).fill(p.armor).stroke({ color: p.light, width: .8 });
     this.rig.addChild(this.reloadMagazine, this.reloadHand);
+    this.reloadHand.visible = this.reloadMagazine.visible = false;
     this.lights.roundRect(-4, -shoulder - 1, 4, 1.6, 0.5).fill(def.color);
     this.lights.roundRect(-4, shoulder, 3, 1.6, 0.5).fill(def.color);
     this.setWeapon(weapon);
@@ -320,7 +321,7 @@ export class OperativeGraphic extends Container {
         }
       } else if (this.def.id === 'VOLT') {
         const r = Math.min(c.def.ability.pulseRadius ?? 170, 20 + (c.def.ability.duration - c.activeRemaining) * 220);
-        e.circle(0, 0, r).stroke({ color, width: 1.6, alpha: Math.max(0.05, 0.6 - (r / 170) * 0.5) });
+        e.circle(0, 0, r).stroke({ color, width: 1.6, alpha: Math.max(0.05, 0.6 - (r / (c.def.ability.pulseRadius ?? 170)) * 0.5) });
       } else if (this.def.id === 'MORSA') {
         e.poly([-20, -20, 20, -20, 24, -12, 24, 12, 20, 20, -20, 20]).stroke({ color, width: 2, alpha: 0.6 });
         for (const side of [-1, 1]) e.poly([-12, side * 10, -27, side * 19, -30, side * 23, -18, side * 22]).fill({ color: 0xa4ac86, alpha: .7 }).stroke({ color, width: 1 });

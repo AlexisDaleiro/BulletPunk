@@ -8,6 +8,7 @@ import type { Level } from '../game/Level';
 import type { KeyColor } from '../types';
 import type { FogSystem } from './FogSystem';
 import type { RenderSystem } from './RenderSystem';
+import { experienceRequired } from '../run/experience';
 
 const SEGMENTS = 10;
 const SEG_W = 14;
@@ -42,6 +43,7 @@ export class HudSystem implements System {
   private readonly dot = new Graphics();
   private readonly info = new Text({ text: '', style: mono(12, COLORS.cyan, 'left') });
   private readonly abilityText = new Text({ text: '', style: mono(11, 0xd8e4df, 'left') });
+  private readonly experienceText = new Text({ text: '', style: mono(10, 0xe6bf83, 'left') });
   private readonly weaponText = new Text({ text: '', style: mono(14, COLORS.cyan) });
   private readonly promptText = new Text({ text: '', style: mono(15, COLORS.amber) });
   private readonly toastText = new Text({ text: '', style: mono(16, COLORS.amber) });
@@ -64,11 +66,12 @@ export class HudSystem implements System {
   init(): void {
     this.info.position.set(8, 52);
     this.abilityText.position.set(8, 108);
+    this.experienceText.position.set(8, 140);
     this.weaponText.anchor.set(0.5, 1);
     this.promptText.anchor.set(0.5, 1);
     this.toastText.anchor.set(0.5, 0);
     this.toastText.style.wordWrap = true;
-    this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText, this.abilityText);
+    this.renderer.hud.addChild(this.bars, this.mini, this.dot, this.info, this.weaponText, this.promptText, this.toastText, this.abilityText, this.experienceText);
   }
 
   /** Blanks the HUD for a new run: nothing from the last one (death flag, minimap cache, texts) survives. */
@@ -82,6 +85,7 @@ export class HudSystem implements System {
     this.dot.clear();
     this.info.text = this.weaponText.text = this.promptText.text = this.toastText.text = '';
     this.abilityText.text = '';
+    this.experienceText.text = '';
   }
 
   resize(width: number, height: number): void {
@@ -107,9 +111,17 @@ export class HudSystem implements System {
       drawn = true;
       this.draw(health, inv, syn.passives.length);
       this.drawAbility(world.get(_entity, 'character'), health);
+      this.drawExperience();
       this.drawMinimap(t.x, t.y);
     });
     this.drawOverlays(health0(world));
+  }
+
+  private drawExperience(): void {
+    const xp = this.state.experience, required = experienceRequired(xp.level);
+    this.experienceText.text = `NV ${xp.level} · XP ${xp.xp}/${required}`;
+    this.bars.roundRect(8, 155, 166, 4, 1).fill({ color: 0xe6bf83, alpha: .15 });
+    if (xp.xp > 0) this.bars.roundRect(8, 155, 166 * xp.xp / required, 4, 1).fill({ color: 0xe6bf83, alpha: .9 });
   }
 
   private drawAbility(c: CharacterComponent | undefined, h: HealthComponent): void {

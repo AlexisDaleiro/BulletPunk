@@ -34,7 +34,7 @@ export interface HealthComponent {
 
 export interface CharacterComponent {
   upgrades?: string[];
-  augments?: { activationHeal?: number; decoy?: boolean; ghostFire?: boolean; novaDamage?: number; scanJam?: boolean; repairShield?: number; pulseDamage?: number; refill?: boolean };
+  augments?: { activationHeal?: number; decoy?: boolean; ghostFire?: boolean; novaDamage?: number; scanJam?: boolean; repairShield?: number; pulseDamage?: number; refill?: boolean; damageMult?: number; maxHp?: number; maxShield?: number };
   def: CharacterDef;
   activeRemaining: number;
   cooldownRemaining: number;

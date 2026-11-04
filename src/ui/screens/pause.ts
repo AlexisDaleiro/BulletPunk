@@ -15,6 +15,7 @@ export function pauseScreen(ctx: UiContext): HTMLElement {
     'summary',
     line('OPERATIVE', getCharacter(info.characterId).name),
     line('FLOOR', String(info.floor)),
+    line('EXPERIENCIA', `NV ${info.experienceLevel} · ${info.experience} XP`),
     line('CREDITS', String(info.credits)),
     line('KILLS', String(info.kills)),
     line('TIME', formatDuration(info.timeSec)),

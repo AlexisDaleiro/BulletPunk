@@ -12,8 +12,9 @@ import './ui.css';
 import './art-direction.css';
 import { upgradeScreen } from './screens/upgrade';
 import './progression.css';
+import { cosmeticsScreen } from './screens/cosmetics';
 
-export type ScreenName = 'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover' | 'upgrade';
+export type ScreenName = 'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover' | 'upgrade' | 'cosmetics';
 
 export interface UiDeps {
   run: RunController;
@@ -41,6 +42,7 @@ export interface UiContext extends UiDeps {
 
 const SCREENS: Record<ScreenName, (ctx: UiContext) => HTMLElement> = {
   upgrade: upgradeScreen,
+  cosmetics: cosmeticsScreen,
   title: titleScreen,
   character: characterScreen,
   profile: profileScreen,

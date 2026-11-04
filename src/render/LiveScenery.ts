@@ -46,9 +46,12 @@ export class LiveScenery extends Container {
         }
         blades.circle(0, 0, 3).fill(0x24373e);
         rotor.addChild(blades); this.fans.push(rotor); this.addChild(base, rotor);
-        if (room.kind !== 'ENTRY') for (let k = 0; k < 3; k++) {
+        if (room.kind !== 'ENTRY') {
+          this.addChild(new Graphics().moveTo(x - 33, y - 8).lineTo(x - 25, y - 8).lineTo(x - 25, y + 13).lineTo(x - 18, y + 13).stroke({ color: 0x586c6e, width: 4 }).stroke({ color: 0x9aa9a0, width: 1, alpha: .5 }));
+          for (let k = 0; k < 3; k++) {
           const node = new Sprite(vapor()); node.anchor.set(.5); node.tint = 0xc0d4ce;
           this.steam.push({ node, x: x - 19, y: y + 13, phase: index * .37 + k / 3 }); this.addChild(node);
+          }
         }
       } else {
         const monitor = new Graphics().roundRect(x - 15, y - 10, 30, 20, 2).fill(0x18262b).stroke({ color: 0x6b8b8e, width: 1 });

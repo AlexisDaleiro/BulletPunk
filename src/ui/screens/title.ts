@@ -1,11 +1,12 @@
 import { getCharacter } from '../../characters/characters';
 import { button, el } from '../dom';
 import type { UiContext } from '../UI';
-import { cinematicBackdrop } from '../splash';
+import { cinematicBackdrop, operativeSplash } from '../splash';
 
 export function titleScreen(ctx: UiContext): HTMLElement {
   const { run, profile } = ctx;
   const resumable = run.active && !run.over;
+  const operative = getCharacter(profile.value.lastCharacter);
 
   const menu = el('div', 'menu');
   if (resumable) {
@@ -50,6 +51,6 @@ export function titleScreen(ctx: UiContext): HTMLElement {
   return el('div', 'panel title', cinematicBackdrop(),
     el('div', 'title-layout', logo, el('p', 'title-intro', 'Entra en las sombras. Sal como una leyenda.'), menu),
     el('div', 'title-status', el('span', 'status-signal', 'CANAL SEGURO'), el('span', '', 'INFILTRACIÓN / EXTRACCIÓN / SUPERVIVENCIA')),
-    el('div', 'title-scene-label', el('span', '', 'DISTRITO INDUSTRIAL'), el('strong', '', 'LA CIUDAD NO DUERME.')),
+    el('div', 'title-scene-label', el('div', 'title-operative', operativeSplash(operative, 'title-portrait', true, profile.lookFor(operative.id))), el('span', '', `OPERATIVO / ${operative.name}`), el('strong', '', 'LA CIUDAD NO DUERME.')),
   );
 }
