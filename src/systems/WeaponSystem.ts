@@ -2,6 +2,7 @@ import type { SoundManager } from '../audio/SoundManager';
 import { abilityModifiers, endAbility } from '../characters/abilities';
 import { weaponMuzzle } from '../characters/weaponPose';
 import { hasMobileTarget, mobileAttackCone } from '../combat/mobileAim';
+import { autoSwapEmptyWeapon } from '../combat/autoSwap';
 import { COLORS, MUZZLE_OFFSET, NOISE_PROFILE_MULT } from '../config';
 import type { Team, TransformComponent, WeaponInventoryComponent } from '../ecs/components';
 import type { System } from '../ecs/System';
@@ -46,6 +47,8 @@ export class WeaponSystem implements System {
         inv.fireCooldown = 0.2;
         return;
       }
+
+      if (world.has(entity, 'playerControlled') && autoSwapEmptyWeapon(inv)) return;
 
       if (inv.reloadTimer > 0) {
         inv.reloadTimer -= dt;

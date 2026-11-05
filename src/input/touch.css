@@ -64,7 +64,13 @@
   background: #f4cd9238;
 }
 
-/* Five actions in a tight 3 × 2 group; every touch target remains at least 44 CSS px. */
+/* Dash stays by the left thumb; the other four actions leave more room to aim. */
+.touch-movement-actions {
+  position: absolute;
+  left: calc(clamp(88px, 16vw, 128px) + env(safe-area-inset-left, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
 .touch-actions {
   position: absolute;
   right: calc(8px + env(safe-area-inset-right, 0px));
@@ -72,7 +78,7 @@
   display: grid;
   grid-template-columns: repeat(3, var(--btn));
   grid-template-rows: repeat(2, var(--btn));
-  grid-template-areas: 'swap reload interact' 'ability ability dash';
+  grid-template-areas: 'swap reload interact' 'ability ability ability';
   gap: var(--gap);
   pointer-events: none;
 }
@@ -81,7 +87,7 @@
   height: var(--btn);
   padding: 0 3px;
   box-sizing: border-box;
-  border-radius: 7px;
+  border-radius: 999px;
   border: 1px solid #91d8d080;
   background: linear-gradient(135deg, #223a42b8, #08131bb8);
   color: #bce7de;
@@ -95,7 +101,7 @@
 .touch-btn.swap { grid-area: swap; }
 .touch-btn.reload { grid-area: reload; }
 .touch-btn.interact { grid-area: interact; border-color: #e5c57799; color: #f1d697; }
-.touch-btn.dash { grid-area: dash; color: #f4cd92; border-color: #d0aa6d; box-shadow: inset 2px 0 #d0aa6d55, 0 2px 8px #0004; }
+.touch-btn.dash { width: 52px; height: 52px; color: #f4cd92; border-color: #d0aa6d; box-shadow: inset 0 0 12px #d0aa6d22, 0 2px 8px #0004; }
 .touch-btn.ability { grid-area: ability; border-color: #c4a7e0aa; color: #e7dbf7; background: #6b4e8f38; white-space: pre-line; font-size: 9px; }
 .touch-btn.ability[aria-disabled='true'] { opacity: .6; }
 .touch-btn.ability.active, .touch-btn.ability.on { opacity: 1; background: #8564af99; }

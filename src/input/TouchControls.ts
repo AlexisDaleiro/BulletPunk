@@ -77,6 +77,7 @@ export class TouchControls {
   readonly aim = new AimPad();
   private readonly root = div('touch-ui');
   private readonly actions = div('touch-actions');
+  private readonly movementActions = div('touch-movement-actions');
   private readonly aimBase = div('aim-pad');
   private readonly aimKnob = div('aim-pad-knob');
   private visible = false;
@@ -91,11 +92,13 @@ export class TouchControls {
     this.aimBase.setAttribute('aria-hidden', 'true');
     this.actions.setAttribute('role', 'group');
     this.actions.setAttribute('aria-label', 'Acciones del operativo');
-    this.root.append(this.move.base, this.aimBase, this.actions);
+    this.movementActions.setAttribute('role', 'group');
+    this.movementActions.setAttribute('aria-label', 'Acciones de movimiento');
+    this.root.append(this.move.base, this.aimBase, this.movementActions, this.actions);
     this.addButton('SWAP', 'swap', 'swap');
     this.addButton('RELOAD', 'reload', 'reload');
     this.addButton('HACK', 'interact', 'interact');
-    this.addButton('DASH', 'dash', 'dash');
+    this.addButton('DASH', 'dash', 'dash', this.movementActions);
     this.abilityButton = this.addButton('SKILL', 'ability', 'ability');
     this.abilityButton.setAttribute('aria-label', 'Activar habilidad');
 
@@ -167,7 +170,7 @@ export class TouchControls {
     this.root.querySelectorAll('.touch-btn.on').forEach((button) => button.classList.remove('on'));
   }
 
-  private addButton(label: string, className: string, edge: keyof ActionEdges): HTMLButtonElement {
+  private addButton(label: string, className: string, edge: keyof ActionEdges, group = this.actions): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `touch-btn ${className}`;
@@ -185,7 +188,7 @@ export class TouchControls {
     button.addEventListener('pointercancel', off);
     button.addEventListener('lostpointercapture', off);
     button.addEventListener('pointerleave', off);
-    this.actions.appendChild(button);
+    group.appendChild(button);
     return button;
   }
 }

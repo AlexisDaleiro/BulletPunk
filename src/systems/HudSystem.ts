@@ -18,6 +18,7 @@ const MAGENTA = 0xff007f;
 const KEY_ORDER: readonly KeyColor[] = ['red', 'blue', 'gold'];
 
 const MINIMAP_SIZE = 132;
+const TOUCH_MINIMAP_SIZE = 92;
 const MINIMAP_MARGIN = 8;
 /** The minimap is redrawn at most this often (seconds), however fast tiles get explored. */
 const MINIMAP_REFRESH = 0.15;
@@ -56,6 +57,7 @@ export class HudSystem implements System {
   private miniVersion = -1;
   private miniFogVersion = -1;
   private miniTimer = 0;
+  private miniSize = MINIMAP_SIZE;
 
   constructor(renderer: RenderSystem, state: GameState, fog: FogSystem) {
     this.renderer = renderer;
@@ -91,7 +93,7 @@ export class HudSystem implements System {
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
-    this.mini.position.set(width - MINIMAP_SIZE - MINIMAP_MARGIN, MINIMAP_MARGIN);
+    this.mini.position.set(width - this.miniSize - MINIMAP_MARGIN, MINIMAP_MARGIN);
     this.weaponText.position.set(width / 2, height - 14);
     this.promptText.position.set(width / 2, height - 100);
     this.toastText.position.set(width / 2, 64);
@@ -99,6 +101,12 @@ export class HudSystem implements System {
   }
 
   render(world: World, _alpha: number, frameDt: number): void {
+    const miniSize = this.state.touch ? TOUCH_MINIMAP_SIZE : MINIMAP_SIZE;
+    if (miniSize !== this.miniSize) {
+      this.miniSize = miniSize;
+      this.miniLevel = null; // Redraw immediately when changing input mode, even without a resize.
+      this.mini.position.set(this.width - miniSize - MINIMAP_MARGIN, MINIMAP_MARGIN);
+    }
     const toastSize = this.state.touch ? 11 : 14;
     if (this.toastText.style.fontSize !== toastSize) this.toastText.style.fontSize = toastSize;
     this.weaponText.y = this.height - (this.state.touch ? 94 : 14);
@@ -197,7 +205,7 @@ export class HudSystem implements System {
     const level = this.level;
     if (!level) return;
     const map = level.map;
-    const scale = MINIMAP_SIZE / Math.max(map.width, map.height);
+    const scale = this.miniSize / Math.max(map.width, map.height);
 
     const stale = level !== this.miniLevel || level.version !== this.miniVersion || this.fog.version !== this.miniFogVersion;
     if (stale && (this.miniTimer >= MINIMAP_REFRESH || level !== this.miniLevel)) {
@@ -233,14 +241,14 @@ export class HudSystem implements System {
         }
       }
 
-      this.mini.clear().rect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE).fill({ color: 0x000000, alpha: 0.55 }).stroke({ width: 1, color: COLORS.cyan, alpha: 0.5 });
+      this.mini.clear().rect(0, 0, this.miniSize, this.miniSize).fill({ color: 0x000000, alpha: 0.55 }).stroke({ width: 1, color: COLORS.cyan, alpha: 0.5 });
       for (const [color, points] of groups) {
         for (let i = 0; i < points.length; i += 2) this.mini.rect(points[i], points[i + 1], scale + 0.4, scale + 0.4);
         this.mini.fill(color);
       }
     }
 
-    this.dot.clear().circle(this.width - MINIMAP_SIZE - MINIMAP_MARGIN + (px / TILE_SIZE) * scale, MINIMAP_MARGIN + (py / TILE_SIZE) * scale, 2.6).fill(COLORS.cyan);
+    this.dot.clear().circle(this.width - this.miniSize - MINIMAP_MARGIN + (px / TILE_SIZE) * scale, MINIMAP_MARGIN + (py / TILE_SIZE) * scale, 2.6).fill(COLORS.cyan);
   }
 }
 

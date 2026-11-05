@@ -65,3 +65,9 @@
   .operative-select .deploy-action { margin-left: auto; }
 }
 @media (max-width: 599px) { .evolution-choices, .cosmetic-layout { grid-template-columns: 1fr; } .evolution-choice { min-height: 200px; } .cosmetic-stage { min-height: 400px; } .cosmetic-panel { height: auto; } }
+
+@media (pointer: coarse) {
+  .ui button { border-radius: 14px; }
+  .ui .btn { clip-path: none; }
+  .pause-btn { border-radius: 50%; }
+}
