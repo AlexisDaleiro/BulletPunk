@@ -4,6 +4,7 @@ import type { System } from '../ecs/System';
 import type { World } from '../ecs/World';
 import { PickupGraphic } from '../render/PickupGraphic';
 import type { RenderSystem } from './RenderSystem';
+import {visualQuality} from '../render/visualQuality';
 
 /** Visual motion has no effect on collision boxes, hearing or combat timing. */
 export class PresentationSystem implements System {
@@ -52,6 +53,7 @@ export class PresentationSystem implements System {
     });
     this.motes.visible = !!player;
     if (player) this.motes.children.forEach((m, i) => {
+      m.visible=i<visualQuality.budget.motes;if(!m.visible)return;
       const x = ((i * 127.1 + this.time * (3 + i % 4)) % 720) - 360;
       const y = ((i * 217.7 - this.time * 5) % 720 + 720) % 720 - 360;
       m.position.set(player.x + x, player.y + y);

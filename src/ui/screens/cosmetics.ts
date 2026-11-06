@@ -5,6 +5,7 @@ import { button, el } from '../dom';
 import { operativeSplash } from '../splash';
 import type { UiContext } from '../UI';
 import { weaponSwatch } from '../weaponSwatch';
+import { syncLabel } from '../syncLabel';
 
 export function cosmeticsScreen(ctx: UiContext): HTMLElement {
   const def = getCharacter(ctx.profile.value.lastCharacter);
@@ -18,7 +19,7 @@ export function cosmeticsScreen(ctx: UiContext): HTMLElement {
   const equip = button('EQUIPAR ESTILO', () => {
     if (Object.values(look).some(id => !ctx.profile.value.cosmetics.unlocked.includes(id))) return;
     for (const kind of ['skin', 'weapon', 'frame', 'pose'] as const) ctx.profile.equip(def.id, kind, look[kind]);
-    message.textContent = 'ESTILO GUARDADO · Se aplica al próximo despliegue.';
+    message.textContent = ctx.accounts.isGuest ? 'ESTILO GUARDADO EN ESTE DISPOSITIVO · Se aplica al próximo despliegue.' : 'ESTILO ACTUALIZADO · Se aplica al próximo despliegue. Revisá el estado de sincronización.';
   }, 'primary');
   const refresh = (): void => {
     for (const [kind, tab] of tabButtons) tab.setAttribute('aria-pressed', String(kind === category));
@@ -49,10 +50,12 @@ export function cosmeticsScreen(ctx: UiContext): HTMLElement {
     tabButtons.set(kind, tab); tabs.append(tab);
   }
   refresh();
+  const sync = el('p', 'account-sync-state', syncLabel(ctx.accounts));
+  ctx.cleanup(ctx.accounts.subscribe(() => { sync.textContent = syncLabel(ctx.accounts); }));
   return el('div', 'panel cosmetic-panel', el('span', 'roster-kicker', 'ARCHIVO DEL OPERATIVO / PERSONALIZACIÓN'),
     el('h2', 'roster-title', 'Tu firma en la ciudad'),
     el('p', 'evolution-intro', 'Los logros de tus incursiones desbloquean estilos. Todos los cosméticos conservan las estadísticas del equipo.'),
     el('div', 'cosmetic-layout', stage, el('div', 'cosmetic-catalog', tabs, options, message)),
-    el('div', 'roster-footer', button('← VOLVER', ctx.back), equip),
+    el('div', 'roster-footer', button('← VOLVER', ctx.back), equip), sync,
   );
 }

@@ -8,6 +8,8 @@ export interface System {
   resize?(width: number, height: number): void;
   /** Fixed-step simulation, `dt` is always FIXED_DT. */
   update?(world: World, dt: number): void;
+  /** After deferred destruction is flushed; snapshots see a complete simulation step. */
+  afterStep?(world: World, dt: number): void;
   /** Once per displayed frame. `alpha` in [0,1) is the progress into the next fixed step. */
   render?(world: World, alpha: number, frameDt: number): void;
 }

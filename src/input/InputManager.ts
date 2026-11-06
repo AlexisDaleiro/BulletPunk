@@ -1,5 +1,6 @@
 import { KEY_SNEAK_SCALE, MOVE_DEADZONE } from '../config';
 import { TouchControls, type ActionEdges } from './TouchControls';
+import type { TouchSettings } from '../settings/Settings';
 
 export type InputMode = 'desktop' | 'touch';
 
@@ -35,6 +36,9 @@ const BLOCKED_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
  * E interact, Q swap weapon, F ability, hold C to sneak (silent).
  */
 export class InputManager {
+  configureTouch(settings: TouchSettings): void {
+    this.touch.configure(settings);
+  }
   private mode: InputMode;
   private readonly host: HTMLElement;
   private readonly touch: TouchControls;
@@ -81,7 +85,9 @@ export class InputManager {
   }
 
   /** Available before the first simulation step, including while the deployment menu is open. */
-  get inputMode(): InputMode { return this.mode; }
+  get inputMode(): InputMode {
+    return this.mode;
+  }
 
   /** Off while a menu is open (also drops held keys and hides the touch buttons); on to play. */
   setActive(active: boolean): void {

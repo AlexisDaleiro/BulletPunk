@@ -16,6 +16,7 @@ const AMMO_DROP_CHANCE = 0.2;
 
 /** Ticks i-frames and shield regen, and handles deaths: bots drop loot and vanish, the player goes down. */
 export class HealthSystem implements System {
+  training=false;
   /** Called once per bot killed. */
   onKill: ((elite: boolean) => void) | null = null;
   private readonly renderer: RenderSystem;
@@ -31,6 +32,11 @@ export class HealthSystem implements System {
       h.invulnerableTimer = Math.max(0, h.invulnerableTimer - dt);
       h.hitFlash = Math.max(0, (h.hitFlash ?? 0) - dt);
       h.shieldBreak = Math.max(0, (h.shieldBreak ?? 0) - dt);
+      if(this.training && world.get(entity,'team')?.team==='ENEMY' && h.hp<=0){
+        h.hp=h.maxHp;h.shield=h.maxShield;h.invulnerableTimer=.2;
+        const t=world.get(entity,'transform');if(t)spawnFlash(world,this.renderer,t.x,t.y,0xffd58c,24,.25);
+        return;
+      }
       if (h.hp > 0) {
         const regen = world.get(entity, 'passiveSynergy')?.stats.shieldRegenRate ?? 0;
         if (regen > 0) h.shield = Math.min(h.maxShield, h.shield + regen * dt);

@@ -1,9 +1,13 @@
 import { AIM_PAD_DEADZONE, AIM_PAD_RADIUS } from '../config.ts';
 
-export interface AimDirection { x: number; y: number }
+export interface AimDirection {
+  x: number;
+  y: number;
+}
 
 /** Floating 360° pad. A tap keeps the previous heading; a deliberate drag queues a heading. */
 export class AimPad {
+  deadzone = AIM_PAD_DEADZONE;
   pointerId: number | null = null;
   x = 0;
   y = 0;
@@ -20,12 +24,13 @@ export class AimPad {
 
   move(x: number, y: number): void {
     if (this.pointerId === null) return;
-    const dx = x - this.originX, dy = y - this.originY;
+    const dx = x - this.originX,
+      dy = y - this.originY;
     const distance = Math.hypot(dx, dy);
     const scale = 1 / Math.max(AIM_PAD_RADIUS, distance);
     this.x = dx * scale;
     this.y = dy * scale;
-    if (distance >= AIM_PAD_DEADZONE) this.pending = { x: dx / distance, y: dy / distance };
+    if (distance >= this.deadzone) this.pending = { x: dx / distance, y: dy / distance };
   }
 
   /** Lifting does not discard a quick drag that happened between simulation steps. */

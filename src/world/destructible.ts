@@ -22,6 +22,9 @@ export class Destructibles {
     }
   }
 
+  snapshot(): [number, number][] { return [...this.hp.entries()]; }
+  restore(entries: [number, number][]): void { this.hp.clear(); for (const [index, hp] of entries) this.hp.set(index, hp); }
+
   /** Applies damage to the tile at (tx, ty); null when it is not destructible (or already gone). */
   damage(map: TileMap, tx: number, ty: number, amount: number): HitResult | null {
     const tile = map.get(tx, ty);

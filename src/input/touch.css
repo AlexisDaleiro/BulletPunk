@@ -7,6 +7,8 @@
   --btn: clamp(44px, 11vh, 48px);
   --gap: 6px;
 }
+.touch-actions, .touch-movement-actions { display: contents !important; }
+.touch-btn {opacity:var(--control-opacity,.85);}.stick-base.on,.aim-pad.on{opacity:var(--control-opacity,.85);}.touch-btn.ability[aria-disabled='true']{opacity:calc(var(--control-opacity,.85)*.6);}
 
 .stick-base, .aim-pad {
   position: absolute;
@@ -105,3 +107,5 @@
 .touch-btn.ability { grid-area: ability; border-color: #c4a7e0aa; color: #e7dbf7; background: #6b4e8f38; white-space: pre-line; font-size: 9px; }
 .touch-btn.ability[aria-disabled='true'] { opacity: .6; }
 .touch-btn.ability.active, .touch-btn.ability.on { opacity: 1; background: #8564af99; }
+
+.touch-ui{--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}

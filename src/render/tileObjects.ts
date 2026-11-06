@@ -45,6 +45,7 @@ const sameKind = (o: ObjCtx, dx: number, dy: number): boolean => o.map.get(o.tx 
 /** Soft footprint under an obstacle: the cheap contact shadow that gives it weight. */
 function footprint(g: Graphics, x: number, y: number, w: number, h: number, r = 4): void {
   g.roundRect(x - 2, y + 1, w + 5, h + 5, r).fill({ color: 0x000000, alpha: 0.34 });
+  g.roundRect(x - 1, y + 3, w + 3, h + 2, r).fill({color:0x000000,alpha:.18});
 }
 
 /** A wall-like block (secret wall, weak wall, shutter frame) matching the sector's walls. */

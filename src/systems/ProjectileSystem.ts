@@ -10,6 +10,7 @@ import type { Level } from '../game/Level';
 import { raycastTiles, segmentCircle } from '../world/raycast';
 import type { TileMap } from '../world/TileMap';
 import type { RenderSystem } from './RenderSystem';
+import { SpatialIndex } from '../core/SpatialIndex';
 
 /** Added to a body's half-size so a bolt that grazes the box still counts. */
 const BULLET_RADIUS = 3;
@@ -26,6 +27,8 @@ const candidates: Candidate[] = [];
  * through a wall or a body. Hits are resolved nearest first; walls end, bounce or are ignored by the shot.
  */
 export class ProjectileSystem implements System {
+  private readonly bodies = new SpatialIndex();
+  candidateChecks = 0;
   /** Current floor's tiles. */
   map: TileMap | null = null;
   /** Current floor; shots damage its destructible obstacles and explosive rounds crack secret walls. */
@@ -44,6 +47,18 @@ export class ProjectileSystem implements System {
     const map = this.map;
     if (!map) return;
     const solid = (tx: number, ty: number): boolean => map.isSolid(tx, ty);
+    this.bodies.clear();
+    this.candidateChecks = 0;
+    world.each(['health', 'transform', 'team', 'collider'], (id, h, t, _team, col) => {
+      if (h.hp > 0)
+        this.bodies.insert(
+          id,
+          t.x - col.halfSize - BULLET_RADIUS,
+          t.y - col.halfSize - BULLET_RADIUS,
+          t.x + col.halfSize + BULLET_RADIUS,
+          t.y + col.halfSize + BULLET_RADIUS,
+        );
+    });
 
     world.each(['projectile', 'transform'], (entity, p, t) => {
       if (!p.active) return;
@@ -57,11 +72,21 @@ export class ProjectileSystem implements System {
       const reach = wall ? wall.t : 1;
 
       candidates.length = 0;
-      world.each(['health', 'transform', 'team', 'collider'], (target, health, tt, team, collider) => {
-        if (team.team === p.team || health.hp <= 0 || p.hit.includes(target)) return;
+      for (const target of this.bodies.query(
+        Math.min(t.prevX, t.x),
+        Math.min(t.prevY, t.y),
+        Math.max(t.prevX, t.x),
+        Math.max(t.prevY, t.y),
+      )) {
+        const health = world.get(target, 'health')!,
+          tt = world.get(target, 'transform')!,
+          team = world.get(target, 'team')!,
+          collider = world.get(target, 'collider')!;
+        if (team.team === p.team || health.hp <= 0 || p.hit.includes(target)) continue;
+        this.candidateChecks++;
         const hit = segmentCircle(t.prevX, t.prevY, t.x, t.y, tt.x, tt.y, collider.halfSize + BULLET_RADIUS);
         if (hit !== null && hit <= reach) candidates.push({ t: hit, entity: target });
-      });
+      }
       candidates.sort((a, b) => a.t - b.t);
 
       for (const c of candidates) {
@@ -71,10 +96,19 @@ export class ProjectileSystem implements System {
           const recentBreak = health.shieldBreak ?? 0;
           const damage = applyDamage(health, p.damage);
           if (damage > 0) {
-            this.impact(world, t.prevX + (t.x - t.prevX) * c.t, t.prevY + (t.y - t.prevY) * c.t, shield > 0 ? 'SHIELD' : 'ARMOR', t.angle);
+            this.impact(
+              world,
+              t.prevX + (t.x - t.prevX) * c.t,
+              t.prevY + (t.y - t.prevY) * c.t,
+              shield > 0 ? 'SHIELD' : 'ARMOR',
+              t.angle,
+            );
             if (recentBreak <= 0 && (health.shieldBreak ?? 0) > 0) {
               const target = world.get(c.entity, 'transform');
-              if (target) { spawnShieldBreak(world, this.renderer, target.x, target.y); this.audio.playShieldBreak(target); }
+              if (target) {
+                spawnShieldBreak(world, this.renderer, target.x, target.y);
+                this.audio.playShieldBreak(target);
+              }
             }
           }
         }
@@ -88,7 +122,8 @@ export class ProjectileSystem implements System {
 
       const hx = t.prevX + (t.x - t.prevX) * wall.t;
       const hy = t.prevY + (t.y - t.prevY) * wall.t;
-      const tileX = Math.floor((hx - wall.nx * 2) / TILE_SIZE), tileY = Math.floor((hy - wall.ny * 2) / TILE_SIZE);
+      const tileX = Math.floor((hx - wall.nx * 2) / TILE_SIZE),
+        tileY = Math.floor((hy - wall.ny * 2) / TILE_SIZE);
       this.impact(world, hx, hy, tileImpactMaterial(map.get(tileX, tileY)), t.angle);
       if (this.level && (wall.nx !== 0 || wall.ny !== 0)) {
         // The slug entered the tile on the far side of the hit face.

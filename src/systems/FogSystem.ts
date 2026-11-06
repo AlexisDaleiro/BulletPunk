@@ -53,6 +53,9 @@ export class FogSystem implements System {
     return map !== null && map.inBounds(tx, ty) && this.explored[ty * map.width + tx] === 1;
   }
 
+  snapshot(): number[] { return [...this.explored.keys()].filter(i => this.explored[i] === 1); }
+  restore(indices: readonly number[]): void { this.explored.fill(0); for (const i of indices) this.explored[i] = 1; this.version++; }
+
   /** Starts a fresh fog for `map`: every tile unexplored. */
   setMap(map: TileMap): void {
     this.map = map;

@@ -12,13 +12,19 @@ export function characterScreen(ctx: UiContext): HTMLElement {
   const briefing = el('aside', 'operative-briefing');
   briefing.setAttribute('aria-live', 'polite');
   const buttons = new Map<string, HTMLButtonElement>();
+  let replacementArmed=false;
   const deploy = button('', () => {
+    if(ctx.saves.hasSaved&&!ctx.run.active&&!replacementArmed){replacementArmed=true;deploy.textContent='DESCARTAR GUARDADO Y DESPLEGAR';deploy.classList.add('armed');return;}
     ctx.close();
-    ctx.run.startRun(getCharacter(profile.value.lastCharacter).id, ctx.takeSeed());
+    ctx.startNew(getCharacter(profile.value.lastCharacter).id, ctx.takeSeed(),replacementArmed);
   }, 'primary deploy-action');
   const selected = el('span', 'selection-label');
+  deploy.disabled = !ctx.accounts.canPlay||['loading','saving'].includes(ctx.saves.status);
+  ctx.cleanup(ctx.accounts.subscribe(() => { deploy.disabled = !ctx.accounts.canPlay||['loading','saving'].includes(ctx.saves.status); }));
+  ctx.cleanup(ctx.saves.subscribe(()=>{deploy.disabled=!ctx.accounts.canPlay||ctx.saves.status==='loading'||ctx.saves.status==='saving';}));
 
   const refresh = (): void => {
+    replacementArmed=false;deploy.classList.remove('armed');
     const def = getCharacter(profile.value.lastCharacter);
     for (const [id, b] of buttons) b.setAttribute('aria-pressed', String(id === def.id));
     deploy.textContent = `DESPLEGAR A ${def.name} ↗`;

@@ -8,6 +8,9 @@ export class NoiseField {
   readonly events: NoiseEvent[] = [];
   private nextId = 0;
 
+  sequence(): number { return this.nextId; }
+  restore(events: NoiseEvent[], nextId: number): void { this.events.splice(0, this.events.length, ...events); this.nextId = nextId; }
+
   /** `radiusMult` below 1 shrinks the ripple (noise damping passives). */
   emit(kind: NoiseKind, x: number, y: number, source: Entity, radiusMult = 1): NoiseEvent {
     const profile = NOISE_PROFILES[kind];

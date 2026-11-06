@@ -52,6 +52,17 @@ export class EnvironmentSystem implements System {
     this.state = state;
   }
 
+  snapshot(ids: Map<number, number>): { hint: number; alarms: [number, Alarm][] } {
+    return { hint: this.hint, alarms: [...this.alarms].filter(([id]) => ids.has(id)).map(([id, alarm]) => [ids.get(id)!, { ...alarm }]) };
+  }
+
+  restore(level: Level, world: World, data: ReturnType<EnvironmentSystem['snapshot']>, ids: Map<number, number>): void {
+    this.world = world; this.hook(level); this.hint = data.hint;
+    for (const [id, alarm] of data.alarms) if (ids.has(id)) this.alarms.set(ids.get(id)!, { ...alarm });
+    world.each(['chest', 'renderable'], (_id, chest, r) => (r.node as ChestGraphic).animate(chest.state, chest.t, 0));
+    world.each(['hazard', 'renderable'], (_id, hazard, r) => { r.node.alpha = hazard.disabled ? .18 : hazard.active ? 1 : .5; });
+  }
+
   update(world: World, dt: number): void {
     this.world = world;
     const level = this.level;

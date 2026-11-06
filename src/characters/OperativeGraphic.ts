@@ -38,8 +38,8 @@ export class OperativeGraphic extends Container {
     const heavy = def.id === 'BRASA' || def.id === 'MORSA' || def.silhouette === 'HEAVY';
     const scout = def.id === 'VECTOR' || def.silhouette === 'SCOUT';
     const shoulder = heavy ? 13 : scout ? 11 : 9;
-    const shadow = new Graphics().ellipse(2, 5, heavy ? 24 : 21, heavy ? 21 : 18).fill({ color: 0x000000, alpha: 0.15 })
-      .ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.45 });
+    const shadow = new Graphics().ellipse(3, 6, heavy ? 26 : 23, heavy ? 22 : 19).fill({ color: 0x000000, alpha: 0.2 })
+      .ellipse(1, 3, heavy ? 20 : 17, heavy ? 18 : 15).fill({ color: 0x000000, alpha: 0.52 });
     this.addChild(shadow, this.effect, this.rig, this.hitEffect);
     this.feet.forEach((foot, i) => {
       foot.roundRect(-15, i ? 3 : -10, 10, 7, 2).fill(INK).stroke({ color: p.metal, width: 0.7 });
@@ -169,6 +169,10 @@ export class OperativeGraphic extends Container {
     }
     // Small abrasion marks rather than a full neon outline.
     body.moveTo(-2, -11).lineTo(1, -10).moveTo(-6, 4).lineTo(-4, 3).stroke({ color: p.light, width: 0.6, alpha: 0.7 });
+    // A restrained key light catches machined edges; the cloth stays matte and dark.
+    body.moveTo(-6,-shoulder-3).lineTo(1,-shoulder-3).lineTo(4,-shoulder+1).stroke({color:p.light,width:1.2,alpha:.8});
+    body.moveTo(-7,shoulder+3).lineTo(-1,shoulder+3).stroke({color:p.metal,width:1,alpha:.65});
+    body.moveTo(0,-7).lineTo(7,-7).stroke({color:p.light,width:1,alpha:.7});
     this.torso.addChild(body);
     const paintedBody = renderer ? cachedArt(`operative:${def.id}:${def.look?.skin ?? 'FIELD'}`, this.torso, renderer) : this.torso;
     this.rig.addChild(paintedBody);

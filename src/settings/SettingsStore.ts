@@ -3,6 +3,8 @@ import { DEFAULT_SETTINGS, loadSettings, sanitizeSettings, saveSettings, type Se
 
 /** The live settings. `update` sanitizes, saves and tells subscribers, so options apply instantly. */
 export class SettingsStore {
+  /** An explicit preset selection also resets any temporary automatic downgrade. */
+  qualitySelection = 0;
   private current: Settings;
   private readonly listeners = new Set<(s: Readonly<Settings>) => void>();
   private readonly storage: KV | null | undefined;
@@ -17,10 +19,12 @@ export class SettingsStore {
   }
 
   update(patch: Partial<Settings>): void {
+    if ('quality' in patch) this.qualitySelection++;
     this.set(sanitizeSettings({ ...this.current, ...patch }));
   }
 
   reset(): void {
+    this.qualitySelection++;
     this.set({ ...DEFAULT_SETTINGS });
   }
 

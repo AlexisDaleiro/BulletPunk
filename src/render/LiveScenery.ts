@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { TILE_SIZE as T } from '../config';
 import type { Dungeon } from '../world/DungeonGenerator';
 import { lineOfSight } from '../world/raycast';
+import {visualQuality} from './visualQuality';
 
 export interface CombatSource { x: number; y: number }
 let vaporTexture: Texture | null = null;
@@ -73,6 +74,7 @@ export class LiveScenery extends Container {
     this.time += dt;
     for (const [i, fan] of this.fans.entries()) fan.rotation = this.reduced ? 0 : this.time * (2.2 + i % 3 * .35);
     for (const puff of this.steam) {
+      puff.node.visible=visualQuality.budget.steam;if(!puff.node.visible)continue;
       const phase = this.reduced ? .4 : (this.time * .28 + puff.phase) % 1;
       puff.node.position.set(puff.x + Math.sin(phase * 4) * 8, puff.y - phase * 40);
       puff.node.scale.set(.25 + phase * .55);

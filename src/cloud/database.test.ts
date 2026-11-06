@@ -1,0 +1,74 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, readdir } from 'node:fs/promises';
+import { PGlite } from '@electric-sql/pglite';
+import { defaultProfile } from '../profile/Profile.ts';
+
+const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222';
+const directory = new URL('../../supabase/migrations/', import.meta.url);
+const migration = (await Promise.all((await readdir(directory)).filter(name => name.endsWith('.sql')).sort().map(name => readFile(new URL(name, directory), 'utf8')))).join('\n');
+
+test('real Postgres: account isolation, guarded mutations, reports, replay, import and reset generation', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`create role anon; create role authenticated; create schema auth;
+      create table auth.users(id uuid primary key);
+      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+      grant usage on schema public,auth to authenticated,anon;
+      grant execute on function auth.uid() to authenticated,anon;`);
+    await db.exec(migration);
+    await db.query('insert into auth.users values ($1),($2)', [A, B]);
+    await db.exec('set role authenticated');
+    const asUser = async (owner: string) => { await db.query("select set_config('request.jwt.claim.sub',$1,false)", [owner]); };
+    const rpc = async (name: string, values: unknown[]) => {
+      const args = values.map((_, i) => `$${i + 1}`).join(',');
+      return (await db.query<{ value: any }>(`select public.${name}(${args}) as value`, values)).rows[0].value;
+    };
+    await asUser(A);
+    let a = await rpc('bp_load_profile', [A]);
+    assert.equal(a.profile.stats.kills, 0);
+    await assert.rejects(rpc('bp_load_profile', [B]), /UNAUTHORIZED/);
+    await assert.rejects(db.query("update public.bp_profiles set data='{}' where user_id=$1", [A]), /permission denied/);
+    await assert.rejects(db.query("select public.bp_envelope($1)", [B]), /permission denied/);
+    assert.equal((await db.query('select * from public.bp_profiles where user_id=$1', [B])).rows.length, 0);
+    await assert.rejects(rpc('bp_apply_profile', [A, crypto.randomUUID(), 0, 0, { stats: { kills: 99999 } }]), /INVALID_PATCH/);
+    await assert.rejects(rpc('bp_apply_profile', [A, crypto.randomUUID(), 0, 0, { equipped: { NIX: { skin: 'NEON', weapon: 'FACTORY', frame: 'STANDARD', pose: 'PORTRAIT' } } }]), /COSMETIC_LOCKED/);
+    const nameId = crypto.randomUUID();
+    a = await rpc('bp_apply_profile', [A, nameId, 0, 0, { name: 'PLAYER_A' }]);
+    assert.equal(a.revision, 1);
+    assert.equal((await rpc('bp_apply_profile', [A, nameId, 0, 0, { name: 'PLAYER_A' }])).revision, 1);
+    await assert.rejects(rpc('bp_apply_profile', [A, crypto.randomUUID(), 0, 0, { name: 'STALE' }]), /REVISION_CONFLICT/);
+    const runId = crypto.randomUUID();
+    const report = { runId, seq: 1, characterId: 'NIX', seed: 123, kills: 5, floor: 2, timeSec: 30, credits: 90, finished: false };
+    await assert.rejects(rpc('bp_report_run', [A, crypto.randomUUID(), 0, { ...report, credits: null }]), /INVALID_REPORT/);
+    await assert.rejects(rpc('bp_report_run', [A, crypto.randomUUID(), 0, { ...report, kills: 1.5 }]), /INVALID_REPORT/);
+    await assert.rejects(rpc('bp_apply_profile', [A, crypto.randomUUID(), a.revision, 0, { preferences: { muted: true, arbitrary: 1 } }]), /INVALID_PREFERENCES/);
+    a = await rpc('bp_report_run', [A, crypto.randomUUID(), 0, report]);
+    assert.equal(a.profile.stats.kills, 5); assert.equal(a.profile.stats.runs, 0);
+    assert.ok(a.profile.cosmetics.unlocked.includes('NEON'));
+    const replay = await rpc('bp_report_run', [A, crypto.randomUUID(), 0, report]);
+    assert.equal(replay.profile.stats.kills, 5); assert.equal(replay.revision, a.revision);
+    a = await rpc('bp_report_run', [A, crypto.randomUUID(), 0, { ...report, seq: 2, kills: 7, timeSec: 40, finished: true }]);
+    assert.equal(a.profile.stats.kills, 7); assert.equal(a.profile.stats.totalTimeSec, 40); assert.equal(a.profile.stats.runs, 1);
+    a = await rpc('bp_report_run', [A, crypto.randomUUID(), 0, { ...report, seq: 3, kills: 15, timeSec: 80, finished: true }]);
+    assert.equal(a.profile.stats.kills, 7); assert.equal(a.profile.runsByCharacter.NIX, 1);
+    await asUser(B);
+    let b = await rpc('bp_load_profile', [B]);
+    assert.equal(b.profile.stats.kills, 0);
+    await assert.rejects(rpc('bp_report_run', [A, crypto.randomUUID(), 0, report]), /UNAUTHORIZED/);
+    const guest = defaultProfile(); guest.name = 'LEGACY'; guest.stats.kills = 10;
+    guest.cosmetics.equipped.NIX = { skin: 'NEON', weapon: 'FACTORY', frame: 'STANDARD', pose: 'PORTRAIT' };
+    const legacyId = crypto.randomUUID(), importId = crypto.randomUUID();
+    b = await rpc('bp_import_local', [B, importId, 0, legacyId, guest]);
+    assert.equal(b.profile.stats.kills, 10); assert.equal(b.profile.cosmetics.equipped.NIX.skin, 'NEON');
+    assert.equal((await rpc('bp_import_local', [B, importId, 0, legacyId, guest])).profile.stats.kills, 10);
+    await assert.rejects(rpc('bp_import_local', [B, crypto.randomUUID(), 0, legacyId, guest]), /IMPORT_NOT_AVAILABLE/);
+    b = await rpc('bp_reset_progress', [B, b.revision, crypto.randomUUID()]);
+    assert.equal(b.generation, 1); assert.equal(b.profile.stats.kills, 0);
+    await assert.rejects(rpc('bp_report_run', [B, crypto.randomUUID(), 0, report]), /GENERATION_CHANGED/);
+    await db.exec('reset role');
+    await db.query('delete from auth.users where id=$1', [A]);
+    assert.equal((await db.query('select * from public.bp_profiles where user_id=$1', [A])).rows.length, 0);
+    assert.equal((await db.query('select * from public.bp_runs where user_id=$1', [A])).rows.length, 0);
+  } finally { await db.close(); }
+});

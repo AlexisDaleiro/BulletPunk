@@ -7,6 +7,7 @@ import type { Door } from '../world/locks';
 import type { SecretPlan } from '../world/plan';
 import { isOpaqueTile, type TileMap } from '../world/TileMap';
 import type { CombatSource } from '../render/LiveScenery';
+import { layoutHash } from '../run/RunSnapshot';
 
 export interface TileChange {
   x: number;
@@ -23,6 +24,7 @@ export interface TileChange {
 export class Level {
   readonly dungeon: Dungeon;
   readonly map: TileMap;
+  readonly layoutHash: number;
   /** Bumped on every tile change; the minimap redraws when it moves. */
   version = 0;
   /** Secret walls already pushed open. */
@@ -36,10 +38,12 @@ export class Level {
   private readonly destructibles: Destructibles;
   private readonly view: TilemapView;
   private readonly onChanged: (level: Level) => void;
+  private readonly changes = new Map<number, TileChange>();
 
   constructor(dungeon: Dungeon, view: TilemapView, onChanged: (level: Level) => void) {
     this.dungeon = dungeon;
     this.map = dungeon.map;
+    this.layoutHash = layoutHash(this.map.tiles);
     this.view = view;
     this.onChanged = onChanged;
     this.destructibles = new Destructibles(dungeon.map);
@@ -56,12 +60,30 @@ export class Level {
   setTiles(changes: readonly TileChange[]): void {
     let sight = false;
     for (const c of changes) {
+      this.changes.set(c.y * this.map.width + c.x, { ...c });
       if (isOpaqueTile(this.map.get(c.x, c.y)) !== isOpaqueTile(c.tile)) sight = true;
       this.map.setWithVariant(c.x, c.y, c.tile, 0);
     }
     this.version++;
     this.view.update(changes);
     if (sight) this.onChanged(this);
+  }
+
+  snapshot(): { tiles: TileChange[]; found: string[]; doors: boolean[]; obstacleHp: [number, number][] } {
+    return { tiles: [...this.changes.values()], found: [...this.found], doors: this.dungeon.doors.map(d => d.unlocked), obstacleHp: this.destructibles.snapshot() };
+  }
+
+  restore(data: ReturnType<Level['snapshot']>): void {
+    this.setTiles(data.tiles);
+    this.found.clear(); for (const id of data.found) this.found.add(id);
+    this.dungeon.doors.forEach((door, i) => { door.unlocked = data.doors[i]; });
+    this.destructibles.restore(data.obstacleHp);
+    for (const [index, hp] of data.obstacleHp) {
+      const tx = index % this.map.width, ty = Math.floor(index / this.map.width), tile = this.map.get(tx, ty);
+      if (tile === 'CRATE' || tile === 'BARREL' || tile === 'WEAK_WALL') this.view.setHealth(tx, ty, hp / DESTRUCTIBLE[tile].hp);
+    }
+    this.view.setDoorColors(this.dungeon.doors);
+    this.onChanged(this);
   }
 
   unlockDoor(door: Door): void {

@@ -1,0 +1,194 @@
+.ui[data-screen='options'] .page {
+  overflow: auto;
+  min-height: 0;
+  max-height: 65vh;
+  padding-right: 8px;
+}
+.controls-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.controls-help {
+  color: #a7bdb7;
+  font:
+    12px/1.55 system-ui,
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  margin: 0;
+}
+.controls-preview {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 240px;
+  width: 100%;
+  border: 1px solid #8bb8ab55;
+  border-radius: 16px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, #7baf9b0b 49.8%, #aac9bd44 50%, #d6ad7209 50.2%),
+    repeating-linear-gradient(0deg, transparent 0 27px, #b2cdb707 28px), #0b181e;
+  touch-action: none;
+}
+.preview-pad {
+  position: absolute;
+  top: 34%;
+  transform: translateX(-50%);
+  border: 1px dashed #8eb9b155;
+  border-radius: 50%;
+  width: 85px;
+  height: 85px;
+  display: grid;
+  place-items: center;
+  color: #8eb9b1;
+  font: 9px monospace;
+  pointer-events: none;
+}
+.preview-action {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px;
+  border-radius: 999px;
+  background: #283d43;
+  border: 1px solid #9bdcc4;
+  color: #ddf3e8;
+  font: 700 9px monospace;
+  touch-action: none;
+  cursor: grab;
+}
+.preview-action:focus {
+  outline: 2px solid #e8c58d;
+  outline-offset: 3px;
+}
+.preview-action.ability {
+  border-color: #c6ace2;
+  background: #48365d;
+}
+.preview-action.dash {
+  border-color: #e8c58d;
+  color: #e8c58d;
+}
+.quality-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.quality-presets .btn[aria-pressed='true'] {
+  background: #d9bc86;
+  color: #142327;
+  border-color: #f2d7a1;
+}
+.keyboard-reference {
+  color: #9cb8ae;
+  font:
+    11px system-ui,
+    sans-serif;
+  margin-top: 18px;
+}
+.keyboard-reference summary {
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+@media (max-height: 480px) {
+  .ui[data-screen='options'] .page {
+    max-height: 55vh;
+  }
+  .controls-help {
+    font-size: 10px;
+  }
+  .controls-preview {
+    min-height: 215px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refuge .cinematic-art,
+  .refuge .refuge-beam {
+    animation: none !important;
+  }
+}
+
+.ui[data-screen='options'] .page.controls {
+  display: block;
+}
+.ui[data-screen='options'] .panel {
+  height: min(780px, 100%);
+  overflow: hidden;
+}
+.ui[data-screen='options'] .heading,
+.ui[data-screen='options'] .tabs,
+.ui[data-screen='options'] .panel > button {
+  flex: 0 0 auto;
+}
+.ui[data-screen='options'] .page {
+  flex: 1;
+  max-height: none;
+}
+.controls-preview.expanded {
+  position: fixed;
+  inset: 10px;
+  width: auto;
+  min-height: 0;
+  height: auto;
+  z-index: 80;
+  background-color: #0b181e;
+  box-shadow: 0 0 0 20px #071014;
+}
+.controls-preview .editor-close {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  z-index: 5;
+  min-height: 40px;
+  height: 40px;
+  padding: 6px 15px;
+  font-size: 10px;
+}
+.editor-expand {
+  flex: 0 0 auto;
+  min-height: 40px;
+  font-size: 9px;
+}
+@media (max-height: 480px) {
+  .ui[data-screen='options'] .panel {
+    padding: 12px 16px;
+    gap: 10px;
+    border-radius: 18px;
+  }
+  .ui[data-screen='options'] .heading {
+    font-size: 22px;
+  }
+  .ui[data-screen='options'] .tabs {
+    margin: 0;
+  }
+  .controls-preview {
+    min-height: 180px;
+  }
+  .controls-preview.expanded {
+    min-height: 0;
+  }
+}
+
+.controls-preview.expanded .preview-pad {
+  top: 30%;
+}
+.controls-preview.expanded .preview-action {
+  cursor: move;
+}
+.controls-preview.expanded::before {
+  content: 'MOVÉ CADA BOTÓN A TU ALCANCE';
+  position: absolute;
+  left: 18px;
+  top: 24px;
+  font: 9px monospace;
+  color: #99b9ab;
+}
+
+.ui[data-screen='options'] .preview-action {
+  border-radius: 999px;
+}
+.preview-action::after,
+.preview-action::before {
+  display: none !important;
+}

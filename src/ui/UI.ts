@@ -13,10 +13,23 @@ import './art-direction.css';
 import { upgradeScreen } from './screens/upgrade';
 import './progression.css';
 import { cosmeticsScreen } from './screens/cosmetics';
+import './menus.css';
+import type { Accounts } from '../cloud/Accounts';
+import { accountScreen } from './screens/account';
+import './accounts.css';
+import type { RunSaves } from '../run/RunSaves';
+import './checkpoints.css';
+import './customization.css';
+import './refuge.css';
 
-export type ScreenName = 'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover' | 'upgrade' | 'cosmetics';
+export type ScreenName =
+  'title' | 'character' | 'profile' | 'options' | 'pause' | 'gameover' | 'upgrade' | 'cosmetics' | 'account';
 
 export interface UiDeps {
+  startPractice: () => Promise<void>;
+  saves: RunSaves;
+  startNew: (characterId: string, seed: number | undefined, replace: boolean) => void;
+  accounts: Accounts;
   run: RunController;
   settings: SettingsStore;
   profile: ProfileStore;
@@ -41,6 +54,7 @@ export interface UiContext extends UiDeps {
 }
 
 const SCREENS: Record<ScreenName, (ctx: UiContext) => HTMLElement> = {
+  account: accountScreen,
   upgrade: upgradeScreen,
   cosmetics: cosmeticsScreen,
   title: titleScreen,
@@ -88,6 +102,27 @@ export class UI {
 
     deps.run.onChange = () => this.syncPauseButton();
     deps.run.onUpgrade = () => this.open('upgrade');
+    let savedSignature = '';
+    deps.saves.subscribe(() => {
+      const signature = `${deps.saves.hasSaved}:${deps.saves.summary?.runId}:${deps.saves.status === 'busy'}:${deps.saves.status === 'conflict'}`;
+      if (signature !== savedSignature) {
+        savedSignature = signature;
+        if (this.current === 'title' && !deps.run.active) this.render('title');
+      }
+    });
+    let identity = `${deps.accounts.userId}:${deps.accounts.sync.ready}:${deps.accounts.initializing}`;
+    deps.accounts.subscribe(() => {
+      const next = `${deps.accounts.userId}:${deps.accounts.sync.ready}:${deps.accounts.initializing}`;
+      if (deps.accounts.recovering && this.current !== 'account') {
+        this.open('account');
+        identity = next;
+        return;
+      }
+      if (identity !== next) {
+        identity = next;
+        if (this.current && this.current !== 'account') this.open('title');
+      }
+    });
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('blur', () => this.openPause());
     document.addEventListener('visibilitychange', () => {
@@ -130,8 +165,7 @@ export class UI {
   }
 
   private resume(): void {
-    this.close();
-    this.deps.run.setMenuOpen(false);
+    void this.deps.saves.continueLive();
   }
 
   private go(name: ScreenName): void {
@@ -167,6 +201,7 @@ export class UI {
   /** The touch pause button shows only while a run is being played with no menu up. */
   private syncPauseButton(): void {
     const { run } = this.deps;
+    document.body.dataset.playing = String(run.active && !run.over && !this.isOpen);
     this.pauseButton.hidden = !(run.active && !run.over && !this.isOpen);
   }
 

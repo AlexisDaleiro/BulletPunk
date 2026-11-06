@@ -1,4 +1,4 @@
-import { Graphics } from 'pixi.js';
+import { Graphics, GraphicsContext } from 'pixi.js';
 import { BULLET_RANGE, COLORS } from '../config';
 import { createTransform, type ProjectileComponent, type Team, type TransformComponent } from '../ecs/components';
 import type { Entity, World } from '../ecs/World';
@@ -24,6 +24,7 @@ export interface ShotSpec {
  * node, and `spawn` re-arms one from the idle list. No allocation per shot once warmed up.
  */
 export class ProjectilePool {
+  private readonly shapes = new Map<string, GraphicsContext>();
   private readonly world: World;
   private readonly renderer: RenderSystem;
   private readonly idle: Entity[] = [];
@@ -58,12 +59,28 @@ export class ProjectilePool {
     const heavy = spec.piercing;
     const length = heavy ? 90 : Math.min(60, Math.max(14, spec.speed * 0.05));
     const width = heavy ? 5 : 2.5;
-    node.clear()
-      .poly([-length, 0, -length * .25, -width * 1.7, width * 2, 0, -length * .25, width * 1.7]).fill({ color, alpha: .12 })
-      .moveTo(-length * .8, 0).lineTo(0, 0).stroke({ width: width * 3, color, alpha: .09 })
-      .moveTo(-length * .65, 0).lineTo(0, 0).stroke({ width, color, alpha: .75 })
-      .moveTo(-length * .22, 0).lineTo(width, 0).stroke({ width: Math.max(1, width * .45), color: 0xfff5db, alpha: .95 })
-      .circle(0, 0, width * .65).fill(0xffffff);
+    const key = `${color}:${length}:${width}:${spec.team}`;
+    let shape = this.shapes.get(key);
+    if (!shape) {
+      shape = new GraphicsContext();
+      this.shapes.set(key, shape);
+      shape
+        .poly([-length, 0, -length * 0.25, -width * 1.7, width * 2, 0, -length * 0.25, width * 1.7])
+        .fill({ color, alpha: 0.12 })
+        .moveTo(-length * 0.8, 0)
+        .lineTo(0, 0)
+        .stroke({ width: width * 3, color, alpha: 0.09 })
+        .moveTo(-length * 0.65, 0)
+        .lineTo(0, 0)
+        .stroke({ width, color, alpha: 0.75 })
+        .moveTo(-length * 0.22, 0)
+        .lineTo(width, 0)
+        .stroke({ width: Math.max(1, width * 0.45), color: 0xfff5db, alpha: 0.95 })
+        .circle(0, 0, width * 0.65)
+        .fill(0xffffff);
+      if (spec.team === 'ENEMY') shape.poly([4, -6, 10, 0, 4, 6, 7, 0]).fill(0xffb59a);
+    }
+    node.context = shape;
     node.renderable = true;
     return entity;
   }
@@ -89,7 +106,16 @@ export class ProjectilePool {
     const entity = this.world.create();
     this.world
       .add(entity, 'transform', createTransform(0, 0))
-      .add(entity, 'projectile', { active: false, team: 'PLAYER', damage: 0, piercing: false, explosive: false, bounces: 0, life: 0, hit: [] })
+      .add(entity, 'projectile', {
+        active: false,
+        team: 'PLAYER',
+        damage: 0,
+        piercing: false,
+        explosive: false,
+        bounces: 0,
+        life: 0,
+        hit: [],
+      })
       .add(entity, 'fogged', {});
     const node = new Graphics();
     node.blendMode = 'add';

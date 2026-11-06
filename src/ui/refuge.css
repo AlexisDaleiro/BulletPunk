@@ -1,0 +1,574 @@
+.refuge .refuge-backdrop {
+  opacity: 0.95;
+}
+.refuge .refuge-backdrop::after {
+  background:
+    linear-gradient(90deg, #071014fa 0%, #071014e8 32%, #07101477 65%, #07101455),
+    linear-gradient(0deg, #071014, transparent 45%);
+}
+.refuge-backdrop .cinematic-art {
+  animation: refuge-camera 30s ease-in-out infinite alternate;
+}
+.refuge .lobby-main {
+  grid-template-columns: 1fr 1.1fr;
+  gap: 5vw;
+}
+.refuge .lobby-headline {
+  font-size: clamp(46px, 5.5vw, 86px);
+  margin: 15px 0;
+}
+.refuge .lobby-description {
+  margin-bottom: 18px;
+}
+.refuge .lobby-play {
+  min-height: 72px;
+}
+.refuge .lobby-play strong {
+  font-size: 26px;
+}
+.refuge .lobby-nav-item {
+  min-height: 84px;
+  padding: 13px;
+  gap: 8px;
+}
+.refuge .lobby-record {
+  margin-top: 15px;
+  padding-top: 12px;
+}
+.refuge .refuge-practice {
+  width: 100%;
+  font-size: 9px;
+  min-height: 44px;
+  background: #12292899;
+  margin-top: 8px;
+  color: #c5ddce;
+}
+.refuge-scene {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: min(100%, 650px);
+  min-height: 380px;
+  border: 1px solid #91b9a955;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #101e21;
+  box-shadow: 0 24px 90px #0006;
+}
+.refuge-room-art {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background: url('/art/splash/refuge.webp') 70% center/cover;
+  transform: scale(1.03);
+  animation: refuge-camera 30s ease-in-out infinite alternate;
+}
+.refuge-room-light {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(0deg, #081918f5, transparent 60%), linear-gradient(90deg, #16352b22, transparent);
+}
+.refuge-scene-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px;
+  gap: 12px;
+}
+.refuge-scene-header .menu-eyebrow {
+  font-size: 8px;
+  color: #d0dccc;
+}
+.refuge-workbench {
+  position: absolute;
+  right: 20px;
+  top: 22%;
+  width: 190px;
+  padding: 16px;
+  background: #0b161bc9;
+  backdrop-filter: blur(8px);
+  border: 1px solid #cba26755;
+  border-radius: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: rotate(-2deg);
+}
+.refuge-workbench strong {
+  font:
+    700 14px system-ui,
+    sans-serif;
+  color: #f2d1a1;
+}
+.refuge-workbench small {
+  font: 7px monospace;
+  letter-spacing: 0.1em;
+  color: #bca68c;
+}
+.bench-silhouette {
+  color: #ddbd89;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.2em;
+}
+.refuge-operative {
+  position: absolute;
+  bottom: 22px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+.refuge-portrait {
+  width: 135px;
+  height: 190px;
+  object-fit: cover;
+  object-position: center 15%;
+  border: 1px solid #b5d6b477;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px #0008;
+}
+.refuge-operative h2 {
+  font:
+    900 45px/0.95 system-ui,
+    sans-serif;
+  letter-spacing: -0.05em;
+  color: #f1eddf;
+  margin: 8px 0;
+}
+.refuge-operative p {
+  color: #b2cbbd;
+  font: 9px monospace;
+}
+.refuge .refuge-change {
+  font-size: 8px;
+  min-height: 44px;
+  padding: 10px;
+  margin-top: 10px;
+  background: #abc9b514;
+}
+.refuge-trophies {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 235px;
+  display: flex;
+  gap: 8px;
+}
+.trophy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+  padding: 12px 4px;
+  border: 1px solid #8da49e22;
+  border-radius: 10px;
+  background: #0b191bc2;
+  color: #647a76;
+}
+.trophy b {
+  font:
+    26px system-ui,
+    sans-serif;
+}
+.trophy small {
+  font: 6px monospace;
+  text-align: center;
+}
+.trophy.earned {
+  border-color: #c4a46b77;
+  color: #ebc78c;
+  background: #59472544;
+}
+.checkpoint-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #16282ad9;
+  border: 1px solid #a7c7b442;
+  border-radius: 13px;
+  margin-top: 10px;
+  text-transform: none;
+}
+.checkpoint-card[hidden] {
+  display: none;
+}
+.checkpoint-portrait {
+  width: 57px;
+  height: 85px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.checkpoint-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.checkpoint-copy small {
+  font: 6px monospace;
+  letter-spacing: 0.1em;
+  color: #92b6a9;
+}
+.checkpoint-copy strong {
+  font:
+    800 15px system-ui,
+    sans-serif;
+  color: #ecddc3;
+}
+.checkpoint-copy > span {
+  font: 8px monospace;
+  color: #b0c3b6;
+}
+.checkpoint-copy p {
+  font:
+    8px/1.4 system-ui,
+    sans-serif;
+  letter-spacing: 0;
+  color: #d0d9c8;
+  margin: 0;
+}
+.checkpoint-health {
+  height: 3px;
+  background: #081319;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.checkpoint-health-fill {
+  display: block;
+  height: 100%;
+  background: #9ad4b0;
+}
+.refuge-beam {
+  position: absolute;
+  right: 3%;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, #f0b66e08, transparent);
+  pointer-events: none;
+  animation: refuge-lamp 9s ease-in-out infinite alternate;
+}
+:root[data-quality='FLUID'] .refuge .cinematic-art,
+:root[data-quality='FLUID'] .refuge .refuge-room-art {
+  animation: none;
+}
+.practice-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.practice-weapons {
+  padding: 14px;
+  background: #13292d;
+  color: #e9ddc6;
+  border: 1px solid #9eaf9a66;
+  border-radius: 12px;
+  max-width: 100%;
+}
+@keyframes refuge-camera {
+  to {
+    transform: scale(1.06) translate(-0.7%, 0.3%);
+  }
+}
+@keyframes refuge-lamp {
+  to {
+    opacity: 0.35;
+  }
+}
+@media (max-height: 600px) and (min-width: 600px) {
+  .refuge .lobby-main {
+    grid-template-columns: 1.15fr 1fr;
+    gap: 3vw;
+  }
+  .refuge .lobby-headline {
+    font-size: 40px;
+    margin: 8px 0;
+  }
+  .refuge .lobby-description {
+    font-size: 10px;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .refuge .lobby-play {
+    min-height: 52px;
+    padding: 8px 14px;
+  }
+  .refuge .lobby-play strong {
+    font-size: 21px;
+  }
+  .refuge .lobby-nav-item {
+    min-height: 47px;
+    padding: 8px;
+    gap: 2px;
+  }
+  .refuge .lobby-nav-item .menu-icon {
+    display: none;
+  }
+  .refuge .lobby-nav-item small {
+    font-size: 8px;
+  }
+  .refuge .refuge-practice {
+    min-height: 36px;
+    margin-top: 4px;
+  }
+  .refuge .lobby-record {
+    display: none;
+  }
+  .refuge-scene {
+    min-height: 245px;
+    border-radius: 16px;
+  }
+  .refuge-scene-header {
+    padding: 12px;
+  }
+  .refuge-scene-header .ready-tag {
+    display: none;
+  }
+  .refuge-workbench {
+    top: 18%;
+    right: 10px;
+    width: 135px;
+    padding: 10px;
+    gap: 5px;
+  }
+  .refuge-workbench strong {
+    font-size: 11px;
+  }
+  .bench-silhouette {
+    font-size: 22px;
+  }
+  .refuge-operative {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    gap: 10px;
+  }
+  .refuge-portrait {
+    width: 70px;
+    height: 110px;
+  }
+  .refuge-operative h2 {
+    font-size: 30px;
+    margin: 5px 0;
+  }
+  .refuge-operative .menu-eyebrow {
+    font-size: 6px;
+  }
+  .refuge-operative p {
+    font-size: 7px;
+  }
+  .refuge .refuge-change {
+    min-height: 36px;
+    font-size: 6px;
+    padding: 6px;
+  }
+  .refuge-trophies {
+    left: 12px;
+    right: auto;
+    bottom: 135px;
+    gap: 4px;
+  }
+  .trophy {
+    padding: 7px 5px;
+  }
+  .trophy b {
+    font-size: 15px;
+  }
+  .trophy small {
+    display: none;
+  }
+  .checkpoint-card {
+    padding: 7px;
+    margin-top: 4px;
+    gap: 8px;
+  }
+  .checkpoint-portrait {
+    width: 35px;
+    height: 51px;
+  }
+  .checkpoint-copy {
+    gap: 2px;
+  }
+  .checkpoint-copy strong {
+    font-size: 11px;
+  }
+  .checkpoint-copy small,
+  .checkpoint-copy p {
+    font-size: 6px;
+  }
+  .checkpoint-copy > span {
+    font-size: 7px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-headline {
+    font-size: 28px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-description {
+    display: none;
+  }
+}
+@media (max-width: 599px) {
+  .refuge .lobby-main {
+    display: flex;
+  }
+  .refuge-scene {
+    height: 420px;
+    min-height: 420px;
+  }
+  .refuge .lobby-headline {
+    font-size: 60px;
+  }
+  .refuge .lobby-nav-item {
+    min-height: 78px;
+  }
+  .refuge .lobby-description {
+    font-size: 12px;
+  }
+  .refuge .lobby-main {
+    min-height: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refuge-room-art,
+  .refuge-backdrop .cinematic-art,
+  .refuge-beam {
+    animation: none !important;
+  }
+}
+
+.bench-silhouette {
+  display: block;
+  height: 43px;
+  letter-spacing: 0;
+}
+.bench-silhouette svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.refuge[data-skin='EMBER'] .refuge-room-light {
+  background: linear-gradient(0deg, #23180bf5, transparent 65%);
+}
+@media (max-height: 480px) and (min-width: 600px) {
+  .refuge .lobby-footer {
+    display: none;
+  }
+}
+
+:root[data-quality='FLUID'] .refuge-workbench {
+  backdrop-filter: none;
+}
+
+@media (max-height: 600px) and (min-width: 600px) {
+  .refuge .lobby-main {
+    align-items: stretch;
+  }
+  .refuge .lobby-welcome {
+    align-self: center;
+  }
+  .refuge-scene {
+    height: auto;
+    min-height: 0;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-headline,
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-transmission {
+    display: none;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-deploy {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 5px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-play {
+    min-height: 48px;
+    padding: 6px 10px;
+    gap: 10px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-play strong {
+    font-size: 20px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-play small {
+    font-size: 5px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-play > .menu-icon:last-child {
+    display: none;
+  }
+  .refuge .checkpoint-status,
+  .refuge .checkpoint-takeover {
+    grid-column: 1/-1;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-new-run {
+    min-height: 48px;
+    font-size: 8px;
+  }
+  .refuge:has(.checkpoint-card:not([hidden])) .lobby-nav {
+    margin-top: 6px;
+  }
+}
+@media (max-height: 340px) and (min-width: 600px) {
+  .refuge .lobby-headline {
+    font-size: 31px;
+  }
+  .refuge .lobby-description,
+  .refuge .lobby-transmission {
+    display: none;
+  }
+  .refuge .lobby-header {
+    min-height: 43px;
+    padding-bottom: 7px;
+  }
+  .refuge .lobby-play {
+    min-height: 46px;
+  }
+  .refuge .lobby-nav-item {
+    min-height: 44px;
+  }
+  .refuge .refuge-workbench {
+    width: 115px;
+    top: 14%;
+  }
+  .refuge .refuge-operative h2 {
+    font-size: 25px;
+  }
+  .refuge .refuge-operative .refuge-portrait {
+    height: 90px;
+    width: 58px;
+  }
+  .refuge .refuge-trophies {
+    bottom: 113px;
+  }
+}
+
+@media (max-height: 600px) and (min-width: 600px) {
+  .refuge .refuge-practice {
+    min-height: 44px;
+  }
+  .refuge .checkpoint-portrait {
+    height: 44px;
+    width: 32px;
+  }
+  .refuge .checkpoint-card {
+    padding: 6px;
+  }
+  .refuge .checkpoint-copy {
+    gap: 1px;
+  }
+  .refuge .checkpoint-copy small {
+    display: none;
+  }
+  .refuge .checkpoint-copy strong {
+    font-size: 10px;
+    line-height: 1.1;
+  }
+  .refuge .checkpoint-copy > span {
+    font-size: 6px;
+    line-height: 1.2;
+  }
+}
+body:not([data-playing='true']) #rotate {
+  display: none !important;
+}

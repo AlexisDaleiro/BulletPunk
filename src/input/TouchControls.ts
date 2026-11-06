@@ -1,6 +1,8 @@
 import { AIM_PAD_RADIUS, STICK_RADIUS } from '../config';
 import { AimPad } from './AimPad';
 import './touch.css';
+import { DEFAULT_SETTINGS, type TouchSettings } from '../settings/Settings';
+import { touchLayout } from './touchLayout';
 
 /** One-shot button presses. Shared with InputManager, which latches keyboard presses into it too. */
 export interface ActionEdges {
@@ -73,6 +75,9 @@ class Stick {
  * and Dash / Reload / Interact / Skill buttons. Hidden unless input is in touch mode.
  */
 export class TouchControls {
+  private settings: TouchSettings = DEFAULT_SETTINGS;
+  private configuration = '';
+  private readonly buttons = new Map<keyof ActionEdges, HTMLButtonElement>();
   readonly move = new Stick('stick-base');
   readonly aim = new AimPad();
   private readonly root = div('touch-ui');
@@ -125,23 +130,64 @@ export class TouchControls {
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
 
     host.appendChild(this.root);
+    new ResizeObserver(() => this.layout()).observe(this.root);
+    this.configure(DEFAULT_SETTINGS);
+  }
+
+  configure(settings: TouchSettings): void {
+    const signature = JSON.stringify([
+      settings.touchScale,
+      settings.touchOpacity,
+      settings.touchLeftHanded,
+      settings.aimDeadzone,
+      settings.touchPositions,
+    ]);
+    if (signature === this.configuration) return;
+    this.configuration = signature;
+    this.reset();
+    this.settings = settings;
+    this.aim.deadzone = settings.aimDeadzone;
+    this.root.style.setProperty('--control-opacity', String(settings.touchOpacity));
+    this.layout();
+  }
+  private layout(): void {
+    const rect = this.root.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const style = getComputedStyle(this.root),
+      left = parseFloat(style.getPropertyValue('--safe-left')) || 0,
+      right = parseFloat(style.getPropertyValue('--safe-right')) || 0,
+      bottom = parseFloat(style.getPropertyValue('--safe-bottom')) || 0;
+    const layout = touchLayout(rect.width - left - right, rect.height - bottom, this.settings);
+    for (const [action, button] of this.buttons) {
+      const p = layout[action];
+      Object.assign(button.style, {
+        position: 'absolute',
+        left: `${p.x + left}px`,
+        top: `${p.y}px`,
+        width: `${p.width}px`,
+        height: `${p.height}px`,
+        transform: 'translate(-50%, -50%)',
+      });
+    }
   }
 
   setVisible(visible: boolean): void {
     this.visible = visible;
     if (!visible) this.reset();
     this.root.style.display = visible ? '' : 'none';
+    if (visible) this.layout();
   }
 
   /** Also accepts the first canvas touch when a hybrid device switches into touch mode. */
   readonly beginPointer = (e: PointerEvent): void => {
     if (!this.visible || e.pointerType !== 'touch') return;
     const left = e.clientX - this.root.getBoundingClientRect().left < this.root.clientWidth / 2;
-    const control = left ? this.move : this.aim;
+    const moving = this.settings.touchLeftHanded ? !left : left;
+    const control = moving ? this.move : this.aim;
     if (control.pointerId !== null) return;
     e.preventDefault();
     this.root.setPointerCapture(e.pointerId);
-    if (left) this.move.begin(e.pointerId, e.clientX, e.clientY);
+    if (moving) this.move.begin(e.pointerId, e.clientX, e.clientY);
     else {
       this.aim.begin(e.pointerId, e.clientX, e.clientY);
       this.aimBase.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
@@ -170,12 +216,26 @@ export class TouchControls {
     this.root.querySelectorAll('.touch-btn.on').forEach((button) => button.classList.remove('on'));
   }
 
-  private addButton(label: string, className: string, edge: keyof ActionEdges, group = this.actions): HTMLButtonElement {
+  private addButton(
+    label: string,
+    className: string,
+    edge: keyof ActionEdges,
+    group = this.actions,
+  ): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `touch-btn ${className}`;
     button.textContent = label;
-    button.setAttribute('aria-label', { swap: 'Cambiar arma', reload: 'Recargar', interact: 'Interactuar', dash: 'Impulso', ability: 'Activar habilidad' }[edge]);
+    button.setAttribute(
+      'aria-label',
+      {
+        swap: 'Cambiar arma',
+        reload: 'Recargar',
+        interact: 'Interactuar',
+        dash: 'Impulso',
+        ability: 'Activar habilidad',
+      }[edge],
+    );
     button.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation(); // keep the root from starting a stick under the button
@@ -189,6 +249,7 @@ export class TouchControls {
     button.addEventListener('lostpointercapture', off);
     button.addEventListener('pointerleave', off);
     group.appendChild(button);
+    this.buttons.set(edge, button);
     return button;
   }
 }

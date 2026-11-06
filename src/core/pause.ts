@@ -1,4 +1,4 @@
-export type PauseReason = 'menu' | 'portrait' | 'hidden';
+export type PauseReason = 'menu' | 'portrait' | 'hidden' | 'checkpoint';
 
 /**
  * Why the game is frozen. A set, not a boolean: rotating a phone back to landscape must not

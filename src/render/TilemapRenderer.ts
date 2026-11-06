@@ -8,6 +8,8 @@ import type { TileMap } from '../world/TileMap';
 import { drawTileObject, shade, WALL_PAL, type ObjCtx } from './tileObjects';
 import { sectorAtmosphere } from './sectorAtmosphere';
 import { LiveScenery, type CombatSource } from './LiveScenery';
+import {districtMarkings} from './districtMarkings';
+import {visualQuality} from './visualQuality';
 
 const T = TILE_SIZE;
 const AMBER = 0xffe600;
@@ -386,6 +388,9 @@ function drawDecor(list: readonly Decor[]): { floor: Container; wall: Container;
  * redrawn alone. Opening a door or breaking a crate never redraws the map.
  */
 export class TilemapView {
+  private reflections:Sprite[]=[];
+  private lightNodes:Sprite[]=[];
+  private quality='';
   private live: LiveScenery | null = null;
   private readonly parent: Container;
   private root: Container | null = null;
@@ -407,6 +412,7 @@ export class TilemapView {
     this.objects.clear();
     this.health.clear();
     this.flicker = [];
+    this.reflections=[];this.lightNodes=[];this.quality='';
     this.dungeon = d;
     const grids = computeGrids(d);
     this.grids = grids;
@@ -424,6 +430,7 @@ export class TilemapView {
       s.alpha = l.alpha;
       s.blendMode = 'add';
       lights.addChild(s);
+      this.lightNodes.push(s);
       // A narrow reflection gives the light a wet material response with no post-process pass.
       const reflection = new Sprite(tex);
       reflection.anchor.set(.5);
@@ -434,6 +441,7 @@ export class TilemapView {
       reflection.alpha = l.alpha * .3;
       reflection.blendMode = 'add';
       lights.addChild(reflection);
+      this.reflections.push(reflection);
       if (l.flicker) this.flicker.push({ sprite: s, base: l.alpha, phase: Math.random() * 10, speed: 5 + Math.random() * 9 });
     }
     // Terminals get a small steady glow of their own.
@@ -442,7 +450,7 @@ export class TilemapView {
     this.objectLayer = new Container();
     this.live = new LiveScenery(d);
     this.root = new Container();
-    this.root.addChild(drawFloor(d.map, grids), sectorAtmosphere(d), decor.floor, this.live, drawWalls(d.map, grids), this.objectLayer, decor.wall, decor.neon, lights);
+    this.root.addChild(drawFloor(d.map, grids), districtMarkings(d),sectorAtmosphere(d), decor.floor, this.live, drawWalls(d.map, grids), this.objectLayer, decor.wall, decor.neon, lights);
     this.parent.addChild(this.root);
 
     for (let ty = 0; ty < d.map.height; ty++) for (let tx = 0; tx < d.map.width; tx++) this.draw(tx, ty);
@@ -504,6 +512,11 @@ export class TilemapView {
 
   /** Broken lamps stutter. */
   tick(dt: number, combat: readonly CombatSource[] = []): void {
+    if(this.quality!==visualQuality.preset){
+      this.quality=visualQuality.preset;
+      this.lightNodes.forEach((node,i)=>node.visible=i<visualQuality.budget.lights);
+      this.reflections.forEach((node,i)=>node.visible=visualQuality.budget.reflections&&i<visualQuality.budget.lights);
+    }
     this.time += dt;
     this.live?.tick(dt, combat);
     for (const f of this.flicker) {

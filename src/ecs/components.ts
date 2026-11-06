@@ -34,7 +34,19 @@ export interface HealthComponent {
 
 export interface CharacterComponent {
   upgrades?: string[];
-  augments?: { activationHeal?: number; decoy?: boolean; ghostFire?: boolean; novaDamage?: number; scanJam?: boolean; repairShield?: number; pulseDamage?: number; refill?: boolean; damageMult?: number; maxHp?: number; maxShield?: number };
+  augments?: {
+    activationHeal?: number;
+    decoy?: boolean;
+    ghostFire?: boolean;
+    novaDamage?: number;
+    scanJam?: boolean;
+    repairShield?: number;
+    pulseDamage?: number;
+    refill?: boolean;
+    damageMult?: number;
+    maxHp?: number;
+    maxShield?: number;
+  };
   def: CharacterDef;
   activeRemaining: number;
   cooldownRemaining: number;
@@ -79,12 +91,7 @@ export interface PassiveSynergyComponent {
   stats: Required<CyberwarePassive['modifiers']>;
 }
 
-export type AIState =
-  | 'PATROL'
-  | 'INVESTIGATE_NOISE'
-  | 'ALERT_ACQUIRE'
-  | 'COMBAT_ENGAGE'
-  | 'SEARCH_LOST_TARGET';
+export type AIState = 'PATROL' | 'INVESTIGATE_NOISE' | 'ALERT_ACQUIRE' | 'COMBAT_ENGAGE' | 'SEARCH_LOST_TARGET';
 
 export interface AIControllerComponent {
   disruptedTimer: number;
@@ -246,6 +253,7 @@ export interface LifetimeComponent {
 }
 
 export interface ComponentMap {
+  trainingTarget: Record<string, never>;
   elite: { bonusCredits: number };
   enemyVisual: { appearance: EnemyAppearance; recoil: number };
   pickupVisual: { age: number; phase: number };
@@ -292,10 +300,7 @@ export function createIntent(aimAngle = 0): IntentComponent {
   };
 }
 
-export function createAIController(
-  homeRoomId: string,
-  waypoints: { x: number; y: number }[],
-): AIControllerComponent {
+export function createAIController(homeRoomId: string, waypoints: { x: number; y: number }[]): AIControllerComponent {
   return {
     state: 'PATROL',
     disruptedTimer: 0,

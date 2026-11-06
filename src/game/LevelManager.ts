@@ -9,7 +9,12 @@ import { TilemapView } from '../render/TilemapRenderer';
 import type { FogSystem } from '../systems/FogSystem';
 import type { RenderSystem } from '../systems/RenderSystem';
 import type { VisionRaycastSystem } from '../systems/VisionRaycastSystem';
-import { generateDungeon } from '../world/DungeonGenerator';
+import { generateDungeon, type Dungeon } from '../world/DungeonGenerator';
+import { trainingDungeon } from '../world/TrainingDungeon';
+import { createEnemy } from '../entities/enemies';
+import { createTerminal } from '../entities/props';
+import { createWeaponInventory, WEAPONS, type WeaponId } from '../combat/weapons';
+import { TILE_SIZE } from '../config';
 import type { TileMap } from '../world/TileMap';
 import { extractWallEdges } from '../world/wallEdges';
 import type { GameState } from './GameState';
@@ -61,6 +66,33 @@ export class LevelManager implements System {
     this.baseSeed = baseSeed;
     this.load(1);
   }
+  startTraining(character: CharacterDef): void {
+    this.character = character;
+    this.baseSeed = 0x50524143;
+    this.load(1, true, trainingDungeon());
+    this.deps.world.add(this.player!, 'weaponInventory', createWeaponInventory(Object.keys(WEAPONS) as WeaponId[]));
+    for (const [y, weapon] of [
+      [9.5, 'AUTO_SMG'],
+      [12.5, 'PLASMA_PISTOL'],
+      [15.5, 'NEON_SHOTGUN'],
+    ] as const) {
+      const id = createEnemy(this.deps.world, this.deps.renderer, 13.5 * TILE_SIZE, y * TILE_SIZE, 'range', [], weapon);
+      this.deps.world.get(id, 'locomotion')!.runSpeed = 0;
+      this.deps.world.add(id, 'trainingTarget', {});
+    }
+    createTerminal(this.deps.world, this.deps.renderer, 6, 16);
+    this.deps.state.toast('PRÁCTICA · Q / SWAP: TODAS LAS ARMAS · F / SKILL: HABILIDAD · PAUSA: SALIR', 8);
+  }
+
+  get pendingFloor(): number | null {
+    return this.pending;
+  }
+  restoreFloor(character: CharacterDef, baseSeed: number, floor: number, pending: number | null): void {
+    this.character = character;
+    this.baseSeed = baseSeed;
+    this.load(floor, true);
+    this.pending = pending;
+  }
 
   /** Tears the run down: every entity (the player too), floor state and run state. Nothing carries over. */
   reset(): void {
@@ -90,7 +122,7 @@ export class LevelManager implements System {
     this.load(floor);
   }
 
-  private load(floor: number): void {
+  private load(floor: number, restoring = false, override?: Dungeon): void {
     const { world, renderer, state, noise, pool, audio, fog, vision, mapUsers, levelUsers } = this.deps;
     const baseSeed = this.baseSeed;
     state.floor = floor;
@@ -103,7 +135,7 @@ export class LevelManager implements System {
     noise.events.length = 0;
 
     const seed = floor === 1 ? baseSeed : (baseSeed + (floor - 1) * SEED_STEP) >>> 0;
-    const dungeon = generateDungeon(seed, { floor });
+    const dungeon = override ?? generateDungeon(seed, { floor });
     const level = new Level(dungeon, this.view, (l) => {
       vision.segments = extractWallEdges(l.map);
     });
@@ -127,11 +159,18 @@ export class LevelManager implements System {
       audio.playElevator();
     }
 
-    const bots = populateFloor(world, renderer, dungeon);
+    const bots = restoring ? 0 : populateFloor(world, renderer, dungeon);
     const hasShop = dungeon.rooms.some((r) => r.type === 'SHOP');
-    console.info(`floor ${floor} (seed ${seed}): ${dungeon.rooms.length} rooms, ${bots} bots, ${dungeon.doors.length} locks, ${dungeon.plan.chests.length} chests, ${dungeon.plan.secrets.length} secrets`);
+    console.info(
+      `floor ${floor} (seed ${seed}): ${dungeon.rooms.length} rooms, ${bots} bots, ${dungeon.doors.length} locks, ${dungeon.plan.chests.length} chests, ${dungeon.plan.secrets.length} secrets`,
+    );
     if (floor === 1) {
-      state.toast(state.touch ? 'PAD IZQUIERDO: MOVER · PAD DERECHO: APUNTAR · DISPARO AUTOMÁTICO' : 'WASD MOVE · F ABILITY · SPACE DASH · Q SWAP · E INTERACT · ODD WALLS CAN BE PUSHED', 5);
+      state.toast(
+        state.touch
+          ? 'PAD IZQUIERDO: MOVER · PAD DERECHO: APUNTAR · DISPARO AUTOMÁTICO'
+          : 'WASD MOVE · F ABILITY · SPACE DASH · Q SWAP · E INTERACT · ODD WALLS CAN BE PUSHED',
+        5,
+      );
     } else {
       state.toast(`FLOOR ${floor}${hasShop ? ' · SHOP ON THIS LEVEL' : ''}`, 3.5);
     }

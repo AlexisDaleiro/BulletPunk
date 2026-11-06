@@ -1,0 +1,41 @@
+.checkpoint-status {
+  margin: 4px 2px 0;
+  color: #b6c8b5;
+  font:
+    11px/1.5 system-ui,
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+.lobby .checkpoint-takeover {
+  min-height: 46px;
+  padding: 10px 14px;
+  font-size: 9px;
+  border-color: #edc18c88;
+  color: #e4cca8;
+}
+.pause-save {
+  border-color: #b0c99c88;
+  color: #d0e4bf;
+  background: #557b4022;
+}
+.lobby-deploy:has(.lobby-new-run) + .lobby-nav + .lobby-record {
+  display: none;
+}
+@media (max-height: 480px) and (min-width: 600px) {
+  .checkpoint-status {
+    font-size: 9px;
+    margin-top: 0;
+  }
+  .lobby .checkpoint-takeover {
+    font-size: 8px;
+    min-height: 44px;
+  }
+  .lobby-deploy:has(.lobby-new-run) {
+    gap: 4px;
+  }
+  .pause-actions .pause-save {
+    min-height: 44px;
+  }
+}

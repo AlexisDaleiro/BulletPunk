@@ -153,7 +153,7 @@ export class HudSystem implements System {
     this.segments(40, health.hp, health.maxHp, MAGENTA);
     this.ledger();
 
-    const infoText = `FLOOR ${this.state.floor}   ¢ ${this.state.credits}   IMPLANTS ${implants}`;
+    const infoText = this.state.practice?'PRÁCTICA / BLANCOS REGENERABLES':`FLOOR ${this.state.floor}   ¢ ${this.state.credits}   IMPLANTS ${implants}`;
     if (this.info.text !== infoText) this.info.text = infoText;
 
     const weapon = inv.slots[inv.activeSlot];

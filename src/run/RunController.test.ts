@@ -19,6 +19,7 @@ function fixture() {
       world.add(this.player, 'character', { def, activeRemaining: 0, cooldownRemaining: 0, activationFlash: 0, recoil: 0, trailTimer: 0 });
       world.add(this.player, 'health', createHealth());
     },
+    startTraining(def:CharacterDef){this.start(def);},
   };
   const deps = { world, state, profile, levels, hud: { reset() {}, onDeath: null }, input: { inputMode: 'touch', setActive() {} },
     game: { setPause(_reason: string, value: boolean) { paused = value; }, app: { canvas: { style: { visibility: '' } } } } };
@@ -71,4 +72,14 @@ test('restart clears XP and upgrades while keeping cosmetics; death cannot spend
   world.get(levels.player!, 'health')!.hp = 0;
   assert.equal(run.chooseUpgrade(run.upgradeOptions[0].id), false);
   run.over = true; assert.equal(run.awardExperience(60), 0);
+});
+
+
+test('practice cannot award XP, unlock cosmetics, report or finalize a real run',()=>{
+  const f=fixture(),before=structuredClone(f.profile.value);let reports=0,starts=0;
+  const deps=(f.run as unknown as {deps:RunDeps}).deps;deps.onRunReport=()=>reports++;deps.onStart=()=>starts++;
+  f.run.startPractice('MORSA');f.state.kills=999;f.state.floor=10;f.run.update(f.world,1);
+  assert.equal(f.run.awardExperience(1000),0);f.run.reportProgress();f.run.endRun();f.run.quitToMenu();
+  assert.deepEqual(f.profile.value,before);assert.equal(reports,0);assert.equal(starts,0);
+  f.run.startRun('NIX',123);assert.equal(f.run.practice,false);assert.equal(starts,1);
 });

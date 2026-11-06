@@ -1,13 +1,32 @@
-import { Container, Text, type Application } from 'pixi.js';
+import { Container, Text, Graphics, type GraphicsContext, type Application } from 'pixi.js';
 import { COLORS, VIEW_SPAN } from '../config';
 import { lerp, lerpAngle } from '../core/math';
 import type { System } from '../ecs/System';
 import type { Entity, World } from '../ecs/World';
+import { QUALITY, visualQuality } from '../render/visualQuality';
 
 /** Spec render order 1-5, back to front. Post-process (6) and HUD (7) wrap them below. */
 export type LayerName = 'floor' | 'shadows' | 'entities' | 'vision' | 'ripples';
 
 export class RenderSystem implements System {
+  private readonly effectNodes = new WeakSet<Graphics>();
+  private readonly idleEffects: Graphics[] = [];
+  pooledGraphic(context: GraphicsContext): Graphics {
+    const node = this.idleEffects.pop() ?? new Graphics(context);
+    this.effectNodes.add(node);
+    node.context = context;
+    node.alpha = 1;
+    node.tint = 0xffffff;
+    node.scale.set(1);
+    node.rotation = 0;
+    node.visible = true;
+    node.renderable = true;
+    node.blendMode = 'normal';
+    return node;
+  }
+  get idleEffectCount(): number {
+    return this.idleEffects.length;
+  }
   readonly layers: Record<LayerName, Container> = {
     floor: new Container(),
     shadows: new Container(),
@@ -43,7 +62,13 @@ export class RenderSystem implements System {
     );
     this.stats.position.set(8, 8);
     this.stats.visible = false;
-    world.store('renderable').onRemove = (_, r) => r.node.destroy({ children: true });
+    world.store('renderable').onRemove = (_, r) => {
+      if (r.node instanceof Graphics && this.effectNodes.has(r.node) && this.idleEffects.length < 200) {
+        r.node.removeFromParent();
+        r.node.visible = false;
+        this.idleEffects.push(r.node);
+      } else r.node.destroy({ children: true });
+    };
   }
 
   init(): void {
@@ -52,7 +77,9 @@ export class RenderSystem implements System {
     this.app.stage.addChild(this.post, this.hud);
   }
 
-  get renderer() { return this.app.renderer; }
+  get renderer() {
+    return this.app.renderer;
+  }
 
   /** The FPS / entity counter in the corner. */
   set showStats(visible: boolean) {
@@ -79,22 +106,28 @@ export class RenderSystem implements System {
   }
 
   render(world: World, alpha: number, frameDt: number): void {
-    world.each(['transform', 'renderable'], (_, t, r) => {
-      r.node.position.set(lerp(t.prevX, t.x, alpha), lerp(t.prevY, t.y, alpha));
-      r.node.rotation = lerpAngle(t.prevAngle, t.angle, alpha);
-    });
-
     const target = this.cameraTarget === null ? undefined : world.get(this.cameraTarget, 'transform');
     const cx = target ? lerp(target.prevX, target.x, alpha) : 0;
     const cy = target ? lerp(target.prevY, target.y, alpha) : 0;
     const zoom = Math.min(this.width, this.height) / VIEW_SPAN;
+    const halfWidth = this.width / (2 * zoom) + 400,
+      halfHeight = this.height / (2 * zoom) + 400;
+    world.each(['transform', 'renderable'], (id, t, r) => {
+      const x = lerp(t.prevX, t.x, alpha),
+        y = lerp(t.prevY, t.y, alpha),
+        bullet = world.get(id, 'projectile');
+      // Fog's `visible` remains authoritative for targeting. This only skips offscreen drawing.
+      r.node.renderable = (!bullet || bullet.active) && Math.abs(x - cx) < halfWidth && Math.abs(y - cy) < halfHeight;
+      r.node.position.set(x, y);
+      r.node.rotation = lerpAngle(t.prevAngle, t.angle, alpha);
+    });
     this.scene.scale.set(zoom);
     this.scene.position.set(this.width / 2 - cx * zoom, this.height / 2 - cy * zoom);
 
     this.statsTimer += frameDt;
     if (this.statsTimer >= 0.5) {
       this.statsTimer = 0;
-      this.stats.text = `${Math.round(this.app.ticker.FPS)} FPS  ${world.entityCount} ENT`;
+      this.stats.text = `${Math.round(this.app.ticker.FPS)} FPS  ${world.entityCount} ENT · ${QUALITY[visualQuality.preset].label}`;
     }
   }
 }

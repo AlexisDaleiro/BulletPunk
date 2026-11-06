@@ -1,31 +1,39 @@
 import { PIXEL_RATIOS, type PixelRatio } from '../../settings/Settings';
 import { button, el, row, toggle } from '../dom';
 import type { UiContext } from '../UI';
+import { controlsEditor } from '../ControlsEditor';
+import { QUALITY, visualQuality } from '../../render/visualQuality';
+import { QUALITY_PRESETS } from '../../settings/Settings';
 
 type Tab = 'sound' | 'graphics' | 'controls';
 const TABS: readonly Tab[] = ['sound', 'graphics', 'controls'];
+const TAB_LABELS: Record<Tab, string> = { sound: 'SONIDO', graphics: 'GRÁFICOS', controls: 'CONTROLES' };
 let lastTab: Tab = 'sound';
 
-const RESOLUTION_LABEL: Record<PixelRatio, string> = { 1: 'LOW 1X', 1.5: 'MID 1.5X', 2: 'HIGH 2X' };
+const RESOLUTION_LABEL: Record<PixelRatio, string> = { 1: 'BAJA 1X', 1.5: 'MEDIA 1.5X', 2: 'ALTA 2X' };
 
 /** Read-only: rebinding is out of scope. */
 const CONTROLS: readonly [string, string][] = [
-  ['MOVE', 'WASD / ARROWS'],
-  ['AIM', 'MOUSE'],
-  ['FIRE', 'LEFT CLICK'],
-  ['RELOAD', 'R'],
+  ['MOVERSE', 'WASD / FLECHAS'],
+  ['APUNTAR', 'MOUSE / PAD DERECHO'],
+  ['DISPARAR', 'CLIC / AUTOMÁTICO EN MÓVIL'],
+  ['RECARGAR', 'R / RELOAD'],
   ['DASH', 'SPACE / SHIFT'],
-  ['ABILITY', 'F / SKILL (TOUCH)'],
-  ['INTERACT', 'E'],
-  ['SWAP WEAPON', 'Q'],
-  ['SNEAK', 'HOLD C'],
-  ['MUTE', 'M'],
-  ['PAUSE', 'ESC / P'],
+  ['HABILIDAD', 'F / SKILL'],
+  ['INTERACTUAR', 'E / HACK'],
+  ['CAMBIAR ARMA', 'Q / SWAP'],
+  ['SIGILO', 'MANTENER C / PAD SUAVE'],
+  ['SILENCIAR', 'M'],
+  ['PAUSA', 'ESC / P'],
 ];
 
 /** One screen for both the title and the pause menu. Every control writes straight to the settings. */
 export function optionsScreen(ctx: UiContext): HTMLElement {
-  const pages: Record<Tab, HTMLElement> = { sound: soundPage(ctx), graphics: graphicsPage(ctx), controls: controlsPage() };
+  const pages: Record<Tab, HTMLElement> = {
+    sound: soundPage(ctx),
+    graphics: graphicsPage(ctx),
+    controls: controlsPage(ctx),
+  };
   const tabButtons = new Map<Tab, HTMLButtonElement>();
   const tabs = el('div', 'tabs');
   tabs.setAttribute('role', 'tablist');
@@ -38,7 +46,7 @@ export function optionsScreen(ctx: UiContext): HTMLElement {
     }
   };
   for (const tab of TABS) {
-    const b = button(tab.toUpperCase(), () => select(tab));
+    const b = button(TAB_LABELS[tab], () => select(tab));
     b.setAttribute('role', 'tab');
     tabButtons.set(tab, b);
     tabs.append(b);
@@ -46,7 +54,14 @@ export function optionsScreen(ctx: UiContext): HTMLElement {
   select(lastTab);
   tabButtons.get(lastTab)?.setAttribute('data-autofocus', '');
 
-  return el('div', 'panel wide', el('h2', 'heading', 'OPTIONS'), tabs, ...TABS.map((t) => pages[t]), button('BACK', ctx.back));
+  return el(
+    'div',
+    'panel wide',
+    el('h2', 'heading', 'A TU MANERA'),
+    tabs,
+    ...TABS.map((t) => pages[t]),
+    button('VOLVER', ctx.back),
+  );
 }
 
 function soundPage(ctx: UiContext): HTMLElement {
@@ -69,11 +84,25 @@ function soundPage(ctx: UiContext): HTMLElement {
   };
   ctx.cleanup(settings.subscribe(sync));
   sync();
-  return el('div', 'page', row('VOLUME', slider, readout), row('MUTE', mute.el));
+  return el('div', 'page', row('VOLUMEN', slider, readout), row('SILENCIAR', mute.el));
 }
 
 function graphicsPage(ctx: UiContext): HTMLElement {
   const { settings } = ctx;
+  const presets = el('div', 'quality-presets');
+  const presetButtons = QUALITY_PRESETS.map((p) => {
+    const b = button(QUALITY[p].label, () => settings.update({ quality: p, pixelRatio: QUALITY[p].resolution }));
+    presets.append(b);
+    return [p, b] as const;
+  });
+  const adaptive = toggle((on) => settings.update({ adaptiveQuality: on }));
+  const active = el('p', 'controls-help');
+  const showQuality = (): void => {
+    active.textContent = `Perfil activo: ${QUALITY[visualQuality.preset].label}${visualQuality.preset !== settings.value.quality ? ' · reducido automáticamente' : ''}.`;
+  };
+  showQuality();
+  window.addEventListener('bulletpunk:quality', showQuality);
+  ctx.cleanup(() => window.removeEventListener('bulletpunk:quality', showQuality));
   const seg = el('div', 'seg');
   const resolution = new Map<PixelRatio, HTMLButtonElement>();
   for (const ratio of PIXEL_RATIOS) {
@@ -83,10 +112,17 @@ function graphicsPage(ctx: UiContext): HTMLElement {
   }
   const fps = toggle((on) => settings.update({ showFps: on }));
   const antialias = toggle((on) => settings.update({ antialias: on }));
-  const reload = el('div', 'row', el('span', 'note', 'ANTIALIAS APPLIES AFTER A RELOAD'), button('RELOAD NOW', () => location.reload()));
+  const reload = el(
+    'div',
+    'row',
+    el('span', 'note', 'EL SUAVIZADO SE APLICA AL RECARGAR'),
+    button('RECARGAR', () => location.reload()),
+  );
 
   const sync = (): void => {
     const s = settings.value;
+    for (const [p, b] of presetButtons) b.setAttribute('aria-pressed', String(p === s.quality));
+    adaptive.set(s.adaptiveQuality);
     for (const [ratio, b] of resolution) b.setAttribute('aria-pressed', String(ratio === s.pixelRatio));
     fps.set(s.showFps);
     antialias.set(s.antialias);
@@ -94,9 +130,39 @@ function graphicsPage(ctx: UiContext): HTMLElement {
   };
   ctx.cleanup(settings.subscribe(sync));
   sync();
-  return el('div', 'page', row('RESOLUTION', seg), row('SHOW FPS', fps.el), row('ANTIALIAS', antialias.el), reload);
+  return el(
+    'div',
+    'page',
+    presets,
+    active,
+    el(
+      'p',
+      'controls-help',
+      'Fluido reduce partículas, vapor y reflejos. Cinemático amplía el detalle. Las señales de peligro se conservan en todos los perfiles.',
+    ),
+    row('AJUSTE AUTOMÁTICO', adaptive.el),
+    el(
+      'p',
+      'controls-help',
+      'Reduce la calidad durante combates exigentes. Podés desactivarlo para mantener el perfil elegido.',
+    ),
+    row('RESOLUCIÓN MÁXIMA', seg),
+    row('MOSTRAR FPS', fps.el),
+    row('SUAVIZADO', antialias.el),
+    reload,
+  );
 }
 
-function controlsPage(): HTMLElement {
-  return el('div', 'page controls', ...CONTROLS.map(([action, keys]) => el('div', 'stat', el('span', '', action), el('strong', 'value', keys))));
+function controlsPage(ctx: UiContext): HTMLElement {
+  return el(
+    'div',
+    'page controls',
+    controlsEditor(ctx),
+    el(
+      'details',
+      'keyboard-reference',
+      el('summary', '', 'CONTROLES DE TECLADO'),
+      ...CONTROLS.map(([action, keys]) => el('div', 'stat', el('span', '', action), el('strong', 'value', keys))),
+    ),
+  );
 }
